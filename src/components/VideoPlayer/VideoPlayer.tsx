@@ -16,7 +16,10 @@ export function VideoPlayer({
   return (
     <div className="flex w-full max-w-3xl flex-col gap-3">
       <div className="flex items-center justify-between gap-4">
-        <p className="truncate text-sm text-neutral-300" title={video.file.name}>
+        <p
+          className="truncate text-sm text-neutral-300"
+          title={video.file.name}
+        >
           {video.file.name}
         </p>
         <button

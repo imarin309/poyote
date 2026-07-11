@@ -31,7 +31,10 @@ describe('VideoDropZone', () => {
 
   it('エラーがある場合メッセージを表示する', () => {
     render(
-      <VideoDropZone onFileSelected={vi.fn()} error="動画ファイルを選択してください。" />,
+      <VideoDropZone
+        onFileSelected={vi.fn()}
+        error="動画ファイルを選択してください。"
+      />,
     )
 
     expect(screen.getByRole('alert')).toHaveTextContent(

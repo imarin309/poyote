@@ -1,7 +1,9 @@
 const THUMBNAIL_WIDTH = 160
 const THUMBNAIL_QUALITY = 0.7
 
-export async function captureThumbnailBlob(video: HTMLVideoElement): Promise<Blob> {
+export async function captureThumbnailBlob(
+  video: HTMLVideoElement,
+): Promise<Blob> {
   if (video.readyState < video.HAVE_CURRENT_DATA) {
     throw new Error('サムネイルを生成できる状態ではありません。')
   }

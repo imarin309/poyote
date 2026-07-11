@@ -1,6 +1,9 @@
 const SEEK_TIMEOUT_MS = 2000
 
-export function seekAndWait(video: HTMLVideoElement, time: number): Promise<void> {
+export function seekAndWait(
+  video: HTMLVideoElement,
+  time: number,
+): Promise<void> {
   return new Promise((resolve) => {
     let settled = false
 

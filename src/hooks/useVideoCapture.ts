@@ -46,7 +46,7 @@ export function useVideoCapture({
     try {
       const timeSeconds = videoNode.currentTime
       const blob = await captureFrameToBlob(videoNode)
-      const filename = buildCaptureFilename(baseFileName, timeSeconds)
+      const filename = buildCaptureFilename(baseFileName)
       downloadBlob(blob, filename)
 
       setLastCapture((previous) => {
@@ -56,7 +56,9 @@ export function useVideoCapture({
         return { objectUrl: URL.createObjectURL(blob), filename, timeSeconds }
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : '画像の保存に失敗しました。')
+      setError(
+        err instanceof Error ? err.message : '画像の保存に失敗しました。',
+      )
     } finally {
       setIsSaving(false)
     }

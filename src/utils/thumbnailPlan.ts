@@ -18,7 +18,10 @@ export function resolveThumbnailInterval(
   return duration / (maxCount - 1)
 }
 
-export function buildThumbnailTimes(duration: number, interval: number): number[] {
+export function buildThumbnailTimes(
+  duration: number,
+  interval: number,
+): number[] {
   if (!Number.isFinite(duration) || duration <= 0 || interval <= 0) {
     return [0]
   }

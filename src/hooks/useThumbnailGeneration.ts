@@ -3,7 +3,10 @@ import type { RefObject } from 'react'
 import { captureThumbnailBlob } from '../services/captureThumbnail'
 import { seekAndWait } from '../services/seekVideo'
 import type { Thumbnail } from '../types/video'
-import { buildThumbnailTimes, resolveThumbnailInterval } from '../utils/thumbnailPlan'
+import {
+  buildThumbnailTimes,
+  resolveThumbnailInterval,
+} from '../utils/thumbnailPlan'
 
 interface ThumbnailProgress {
   current: number
@@ -20,7 +23,10 @@ export function useThumbnailGeneration(
   duration: number,
 ) {
   const [thumbnails, setThumbnails] = useState<Thumbnail[]>([])
-  const [progress, setProgress] = useState<ThumbnailProgress>({ current: 0, total: 0 })
+  const [progress, setProgress] = useState<ThumbnailProgress>({
+    current: 0,
+    total: 0,
+  })
   const [isGenerating, setIsGenerating] = useState(false)
   const [syncedVideoKey, setSyncedVideoKey] = useState<string | null>(null)
   const generatedForKeyRef = useRef<string | null>(null)

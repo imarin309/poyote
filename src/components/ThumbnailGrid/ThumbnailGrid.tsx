@@ -21,7 +21,10 @@ export function ThumbnailGrid({
   return (
     <div className="flex w-full max-w-3xl flex-col gap-2">
       {isGenerating && (
-        <p data-testid="thumbnail-progress" className="text-sm text-neutral-400">
+        <p
+          data-testid="thumbnail-progress"
+          className="text-sm text-neutral-400"
+        >
           サムネイル生成中… {progress.current}/{progress.total}
         </p>
       )}

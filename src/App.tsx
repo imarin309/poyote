@@ -12,8 +12,13 @@ import { ThumbnailGrid } from './components/ThumbnailGrid/ThumbnailGrid'
 import { stripExtension } from './utils/fileName'
 
 function App() {
-  const { video, error: videoError, loadFile, reportPlaybackError, clear } =
-    useVideoFile()
+  const {
+    video,
+    error: videoError,
+    loadFile,
+    reportPlaybackError,
+    clear,
+  } = useVideoFile()
   const {
     videoRef,
     videoNode,

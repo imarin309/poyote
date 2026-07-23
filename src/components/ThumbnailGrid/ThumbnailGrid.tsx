@@ -19,7 +19,10 @@ export function ThumbnailGrid({
   }
 
   return (
-    <div className="flex w-full max-w-3xl flex-col gap-2">
+    <div
+      data-testid="thumbnail-grid"
+      className="flex w-full max-w-3xl flex-col gap-2"
+    >
       {isGenerating && (
         <p
           data-testid="thumbnail-progress"

@@ -30,7 +30,10 @@ export function PlaybackControls({
   onTogglePlayPause,
 }: PlaybackControlsProps) {
   return (
-    <div className="flex w-full max-w-3xl flex-col items-center gap-3">
+    <div
+      data-testid="playback-controls"
+      className="flex w-full max-w-3xl flex-col items-center gap-3"
+    >
       <p data-testid="time-display" className="text-sm text-neutral-400">
         {formatDuration(currentTime)} / {formatDuration(duration)}
       </p>

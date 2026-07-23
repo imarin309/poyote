@@ -24,10 +24,7 @@ export function CapturePreview({
   lastCapture,
 }: CapturePreviewProps) {
   return (
-    <div
-      data-testid="capture-preview"
-      className="flex w-full max-w-3xl flex-col items-center gap-3"
-    >
+    <div className="flex w-full max-w-3xl flex-col items-center gap-3">
       <div className="flex w-full items-center gap-2">
         <label
           htmlFor="base-file-name"

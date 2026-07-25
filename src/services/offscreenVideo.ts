@@ -6,6 +6,8 @@ export function createOffscreenVideo(src: string): HTMLVideoElement {
   return video
 }
 
+const METADATA_TIMEOUT_MS = 10000
+
 export function waitForMetadata(video: HTMLVideoElement): Promise<void> {
   if (video.readyState >= video.HAVE_METADATA) {
     return Promise.resolve()
@@ -15,6 +17,7 @@ export function waitForMetadata(video: HTMLVideoElement): Promise<void> {
     const cleanup = () => {
       video.removeEventListener('loadedmetadata', handleLoaded)
       video.removeEventListener('error', handleError)
+      clearTimeout(timer)
     }
     const handleLoaded = () => {
       cleanup()
@@ -24,6 +27,10 @@ export function waitForMetadata(video: HTMLVideoElement): Promise<void> {
       cleanup()
       reject(new Error('動画のメタデータ読み込みに失敗しました。'))
     }
+    const timer = setTimeout(() => {
+      cleanup()
+      reject(new Error('動画のメタデータ読み込みがタイムアウトしました。'))
+    }, METADATA_TIMEOUT_MS)
 
     video.addEventListener('loadedmetadata', handleLoaded)
     video.addEventListener('error', handleError)

@@ -46,6 +46,20 @@ describe('waitForMetadata', () => {
       '動画のメタデータ読み込みに失敗しました。',
     )
   })
+
+  it('loadedmetadata/errorのどちらも発火しない場合はタイムアウトで例外になる', async () => {
+    vi.useFakeTimers()
+    const video = createOffscreenVideo('blob:mock-url')
+
+    const promise = waitForMetadata(video)
+    const assertion = expect(promise).rejects.toThrow(
+      '動画のメタデータ読み込みがタイムアウトしました。',
+    )
+    await vi.advanceTimersByTimeAsync(10000)
+    await assertion
+
+    vi.useRealTimers()
+  })
 })
 
 describe('disposeOffscreenVideo', () => {

@@ -76,4 +76,34 @@ describe('captureThumbnailBlob', () => {
       'サムネイルの生成に失敗しました。',
     )
   })
+
+  it('WebPが非対応でnullを返さずPNGに暗黙フォールバックしてもJPEGを試す', async () => {
+    const toBlob = vi
+      .spyOn(HTMLCanvasElement.prototype, 'toBlob')
+      .mockImplementation(function (callback, type) {
+        // canvas.toBlobは非対応typeでもnullではなくimage/pngを黙って返すことがある
+        if (type === 'image/webp') {
+          callback(new Blob([], { type: 'image/png' }))
+        } else {
+          callback(new Blob([], { type }))
+        }
+      })
+
+    const blob = await captureThumbnailBlob(createVideoStub())
+
+    expect(blob.type).toBe('image/jpeg')
+    expect(toBlob).toHaveBeenCalledTimes(2)
+  })
+
+  it('全形式がPNGに暗黙フォールバックした場合はそのPNGを採用する', async () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(
+      function (callback) {
+        callback(new Blob([], { type: 'image/png' }))
+      },
+    )
+
+    const blob = await captureThumbnailBlob(createVideoStub())
+
+    expect(blob.type).toBe('image/png')
+  })
 })

@@ -11,11 +11,24 @@ function canvasToBlob(
 }
 
 async function encodeCanvas(canvas: HTMLCanvasElement): Promise<Blob> {
+  // canvas.toBlobは非対応のtypeを指定してもnullではなく既定形式(多くはimage/png)を
+  // 黙って返すことがあるため、blob.typeが要求どおりか確認してから採用する。
+  // 一致しなければ次の候補を試し、最後まで一致しなければその既定形式のBlobを使う。
+  let fallback: Blob | null = null
+
   for (const type of THUMBNAIL_MIME_TYPES) {
     const blob = await canvasToBlob(canvas, type, THUMBNAIL_QUALITY)
-    if (blob) {
+    if (!blob) {
+      continue
+    }
+    if (blob.type === type) {
       return blob
     }
+    fallback ??= blob
+  }
+
+  if (fallback) {
+    return fallback
   }
 
   throw new Error('サムネイルの生成に失敗しました。')

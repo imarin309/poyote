@@ -90,6 +90,7 @@ export function useThumbnailGeneration(
       try {
         await waitForMetadata(worker)
       } catch {
+        disposeOffscreenVideo(worker)
         if (!cancelled) {
           setIsGenerating(false)
         }

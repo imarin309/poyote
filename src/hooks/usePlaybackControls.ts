@@ -44,6 +44,20 @@ export function usePlaybackControls() {
     }
   }, [videoNode])
 
+  // iOS Safari 等では一時停止中に currentTime を書き換えてもシークが確定されず、
+  // 再生を再開すると元の位置から始まることがある。一瞬 play→pause を挟むことで
+  // シークを確定させ、モバイルでもタップ位置が映像に反映されるようにする
+  const commitSeek = useCallback((node: HTMLVideoElement) => {
+    if (!node.paused) {
+      return
+    }
+
+    void node
+      .play()
+      .then(() => node.pause())
+      .catch(() => {})
+  }, [])
+
   const seekBy = useCallback((deltaSeconds: number) => {
     const node = nodeRef.current
     if (!node || !Number.isFinite(node.duration)) {
@@ -51,7 +65,8 @@ export function usePlaybackControls() {
     }
 
     node.currentTime = clampTime(node.currentTime + deltaSeconds, node.duration)
-  }, [])
+    commitSeek(node)
+  }, [commitSeek])
 
   const seekTo = useCallback((time: number) => {
     const node = nodeRef.current
@@ -60,7 +75,8 @@ export function usePlaybackControls() {
     }
 
     node.currentTime = clampTime(time, node.duration)
-  }, [])
+    commitSeek(node)
+  }, [commitSeek])
 
   const togglePlayPause = useCallback(() => {
     const node = nodeRef.current

@@ -37,6 +37,7 @@ export function VideoPlayer({
         data-testid="video-element"
         src={video.objectUrl}
         controls
+        playsInline
         className="w-full rounded-md bg-black"
         onError={onError}
       />

@@ -21,9 +21,9 @@ interface ThumbnailProgress {
   total: number
 }
 
-// モバイルはメモリ上限が低く、生成を続けるほどネイティブデコーダのメモリが
-// 蓄積してタブごとクラッシュすることがあるため、一定枚数ごとに動画要素を
-// 作り直して解放し、蓄積をリセットする
+// 生成を続けるほどネイティブデコーダのメモリが蓄積し、特にメモリ上限の低い
+// モバイルではタブごとクラッシュすることがあるため、環境を問わず一定枚数
+// ごとに動画要素を作り直して解放し、蓄積をリセットする
 const VIDEO_RECYCLE_INTERVAL = 20
 
 function revokeAll(thumbnails: Thumbnail[]) {
@@ -91,6 +91,7 @@ export function useThumbnailGeneration(
         await waitForMetadata(worker)
       } catch {
         disposeOffscreenVideo(worker)
+        generatedForKeyRef.current = null
         if (!cancelled) {
           setIsGenerating(false)
         }

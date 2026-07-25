@@ -11,9 +11,12 @@ export function Header({ bordered = false, onOpenHelp }: HeaderProps) {
       }`}
     >
       <div />
-      <div className="col-start-2 flex items-center justify-self-center gap-2">
-        <img src="/travel_anpan.png" alt="" className="h-8 w-8 rounded" />
-        <h1 className="text-2xl font-semibold">poyote</h1>
+      <div className="col-start-2 flex flex-col items-center justify-self-center gap-1.5">
+        <div className="flex items-center gap-2">
+          <img src="/travel_anpan.png" alt="" className="h-8 w-8 rounded" />
+          <h1 className="text-2xl font-semibold">poyote</h1>
+        </div>
+        <p className="text-sm text-neutral-400">動画から好きなフレームを切り抜いて画像保存するツール</p>
       </div>
       <div className="col-start-3 flex justify-end">
         <button
@@ -24,7 +27,7 @@ export function Header({ bordered = false, onOpenHelp }: HeaderProps) {
           <span className="flex h-4 w-4 items-center justify-center rounded-full border border-current text-[10px] font-bold">
             ?
           </span>
-          使い方はこちら
+          Help
         </button>
       </div>
     </header>

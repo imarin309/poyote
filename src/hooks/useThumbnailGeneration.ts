@@ -2,16 +2,29 @@ import { useEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { captureThumbnailBlob } from '../services/captureThumbnail'
 import { seekAndWait } from '../services/seekVideo'
+import {
+  createOffscreenVideo,
+  disposeOffscreenVideo,
+  waitForMetadata,
+} from '../services/offscreenVideo'
 import type { Thumbnail } from '../types/video'
 import {
   buildThumbnailTimes,
+  MAX_THUMBNAIL_COUNT,
+  MAX_THUMBNAIL_COUNT_MOBILE,
   resolveThumbnailInterval,
 } from '../utils/thumbnailPlan'
+import { isMobileDevice } from '../utils/device'
 
 interface ThumbnailProgress {
   current: number
   total: number
 }
+
+// 生成を続けるほどネイティブデコーダのメモリが蓄積し、特にメモリ上限の低い
+// モバイルではタブごとクラッシュすることがあるため、環境を問わず一定枚数
+// ごとに動画要素を作り直して解放し、蓄積をリセットする
+const VIDEO_RECYCLE_INTERVAL = 20
 
 function revokeAll(thumbnails: Thumbnail[]) {
   thumbnails.forEach((thumbnail) => URL.revokeObjectURL(thumbnail.objectUrl))
@@ -60,23 +73,50 @@ export function useThumbnailGeneration(
     let cancelled = false
 
     const run = async () => {
-      const interval = resolveThumbnailInterval(duration)
+      const maxCount = isMobileDevice()
+        ? MAX_THUMBNAIL_COUNT_MOBILE
+        : MAX_THUMBNAIL_COUNT
+      const interval = resolveThumbnailInterval(duration, undefined, maxCount)
       const times = buildThumbnailTimes(duration, interval)
-      const originalTime = node.currentTime
       const results: Thumbnail[] = []
 
       setIsGenerating(true)
       setProgress({ current: 0, total: times.length })
+
+      // 表示中のプレーヤーとは別の動画要素でサムネイルを抽出する。
+      // プレーヤー側のシーク位置を乱さずに済み、かつ一定間隔で
+      // 作り直すことでネイティブデコーダのメモリ蓄積をリセットできる
+      let worker = createOffscreenVideo(videoKey)
+      try {
+        await waitForMetadata(worker)
+      } catch {
+        disposeOffscreenVideo(worker)
+        generatedForKeyRef.current = null
+        if (!cancelled) {
+          setIsGenerating(false)
+        }
+        return
+      }
 
       for (let index = 0; index < times.length; index += 1) {
         if (cancelled) {
           break
         }
 
+        if (index > 0 && index % VIDEO_RECYCLE_INTERVAL === 0) {
+          disposeOffscreenVideo(worker)
+          worker = createOffscreenVideo(videoKey)
+          try {
+            await waitForMetadata(worker)
+          } catch {
+            break
+          }
+        }
+
         const time = times[index]
         try {
-          await seekAndWait(node, time)
-          const blob = await captureThumbnailBlob(node)
+          await seekAndWait(worker, time)
+          const blob = await captureThumbnailBlob(worker)
           results.push({ time, objectUrl: URL.createObjectURL(blob) })
         } catch {
           // 生成に失敗したフレームだけスキップし、残りの生成を続ける
@@ -89,8 +129,9 @@ export function useThumbnailGeneration(
         }
       }
 
+      disposeOffscreenVideo(worker)
+
       if (!cancelled) {
-        node.currentTime = originalTime
         setIsGenerating(false)
       }
     }

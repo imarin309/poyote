@@ -1,5 +1,6 @@
 export const DEFAULT_THUMBNAIL_INTERVAL_SECONDS = 10
 export const MAX_THUMBNAIL_COUNT = 360
+export const MAX_THUMBNAIL_COUNT_MOBILE = 60
 
 export function resolveThumbnailInterval(
   duration: number,

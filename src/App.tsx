@@ -79,8 +79,8 @@ function App() {
     <div className="flex h-screen flex-col bg-neutral-950 text-neutral-100">
       <Header bordered onOpenHelp={() => setHelpOpen(true)} />
 
-      <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
-        <div className="flex flex-col items-center gap-6 overflow-y-auto p-6 md:w-1/2">
+      <div className="flex flex-1 flex-col overflow-y-auto md:flex-row md:overflow-hidden">
+        <div className="order-2 flex flex-col items-center gap-6 p-6 md:order-none md:w-1/2 md:overflow-y-auto">
           <ThumbnailGrid
             thumbnails={thumbnails}
             isGenerating={isGenerating}
@@ -89,7 +89,7 @@ function App() {
           />
         </div>
 
-        <div className="flex flex-col items-center gap-4 overflow-y-auto border-neutral-800 p-6 md:w-1/2 md:border-l">
+        <div className="sticky top-0 z-10 order-1 flex flex-col items-center gap-4 border-neutral-800 bg-neutral-950 p-6 md:static md:order-none md:w-1/2 md:overflow-y-auto md:border-l">
           <VideoPlayer
             video={video}
             videoRef={videoRef}

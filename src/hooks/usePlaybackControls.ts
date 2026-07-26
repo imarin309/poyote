@@ -58,25 +58,34 @@ export function usePlaybackControls() {
       .catch(() => {})
   }, [])
 
-  const seekBy = useCallback((deltaSeconds: number) => {
-    const node = nodeRef.current
-    if (!node || !Number.isFinite(node.duration)) {
-      return
-    }
+  const seekBy = useCallback(
+    (deltaSeconds: number) => {
+      const node = nodeRef.current
+      if (!node || !Number.isFinite(node.duration)) {
+        return
+      }
 
-    node.currentTime = clampTime(node.currentTime + deltaSeconds, node.duration)
-    commitSeek(node)
-  }, [commitSeek])
+      node.currentTime = clampTime(
+        node.currentTime + deltaSeconds,
+        node.duration,
+      )
+      commitSeek(node)
+    },
+    [commitSeek],
+  )
 
-  const seekTo = useCallback((time: number) => {
-    const node = nodeRef.current
-    if (!node || !Number.isFinite(node.duration)) {
-      return
-    }
+  const seekTo = useCallback(
+    (time: number) => {
+      const node = nodeRef.current
+      if (!node || !Number.isFinite(node.duration)) {
+        return
+      }
 
-    node.currentTime = clampTime(time, node.duration)
-    commitSeek(node)
-  }, [commitSeek])
+      node.currentTime = clampTime(time, node.duration)
+      commitSeek(node)
+    },
+    [commitSeek],
+  )
 
   const togglePlayPause = useCallback(() => {
     const node = nodeRef.current

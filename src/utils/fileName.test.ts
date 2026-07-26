@@ -20,7 +20,7 @@ describe('stripExtension', () => {
 })
 
 describe('buildCaptureFilename', () => {
-  it('ベース名をそのままWebPファイル名にする', () => {
-    expect(buildCaptureFilename('clip')).toBe('clip.webp')
+  it('ベース名をそのままJPEGファイル名にする', () => {
+    expect(buildCaptureFilename('clip')).toBe('clip.jpg')
   })
 })

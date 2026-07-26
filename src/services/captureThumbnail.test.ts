@@ -34,9 +34,7 @@ describe('captureThumbnailBlob', () => {
 
   it('動画サイズが取得できないと例外を投げる', async () => {
     await expect(
-      captureThumbnailBlob(
-        createVideoStub({ videoWidth: 0, videoHeight: 0 }),
-      ),
+      captureThumbnailBlob(createVideoStub({ videoWidth: 0, videoHeight: 0 })),
     ).rejects.toThrow('動画のサイズを取得できませんでした。')
   })
 

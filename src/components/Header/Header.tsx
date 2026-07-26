@@ -16,7 +16,9 @@ export function Header({ bordered = false, onOpenHelp }: HeaderProps) {
           <img src="/travel_anpan.png" alt="" className="h-8 w-8 rounded" />
           <h1 className="text-2xl font-semibold">poyote</h1>
         </div>
-        <p className="text-sm text-neutral-400">動画から好きなフレームを切り抜いて画像保存するツール</p>
+        <p className="text-sm text-neutral-400">
+          動画から好きなフレームを切り抜いて画像保存するツール
+        </p>
       </div>
       <div className="col-start-3 flex justify-end">
         <button

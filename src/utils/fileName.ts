@@ -8,5 +8,5 @@ export function stripExtension(filename: string): string {
 }
 
 export function buildCaptureFilename(baseFileName: string): string {
-  return `${baseFileName}.webp`
+  return `${baseFileName}.jpg`
 }

@@ -30,29 +30,18 @@ interface UseImageCropOptions {
 }
 
 export function useImageCrop({ save }: UseImageCropOptions) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [presetIndex, setPresetIndex] = useState(0)
   const [geometry, setGeometry] = useState<Geometry | null>(null)
 
   const previewImageRef = useRef<HTMLImageElement | null>(null)
   const dragRef = useRef<DragState | null>(null)
 
-  // プレビューのObject URLは読み込み側（useImageFile）が持つので、ここでは解放しない
-  const open = useCallback((objectUrl: string) => {
+  // 別の画像に切り替わったとき、前の画像の切り取り範囲を引き継がないようにする。
+  // 比率プリセットは選び直す手間を避けるため維持する
+  const reset = useCallback(() => {
     previewImageRef.current = null
     dragRef.current = null
-    setPreviewUrl(objectUrl)
     setGeometry(null)
-    setIsOpen(true)
-  }, [])
-
-  const close = useCallback(() => {
-    previewImageRef.current = null
-    dragRef.current = null
-    setPreviewUrl(null)
-    setGeometry(null)
-    setIsOpen(false)
   }, [])
 
   const measure = useCallback(
@@ -200,12 +189,9 @@ export function useImageCrop({ save }: UseImageCropOptions) {
   }, [geometry, presetIndex, save])
 
   return {
-    isOpen,
-    previewUrl,
     presetIndex,
     crop: geometry?.crop ?? null,
-    open,
-    close,
+    reset,
     measure,
     selectPreset,
     beginDrag,

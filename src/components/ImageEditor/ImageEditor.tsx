@@ -2,6 +2,8 @@ import { useEffect } from 'react'
 import type { PointerEvent } from 'react'
 import { ASPECT_PRESETS } from '../../utils/aspectPresets'
 import type { CropRect, ResizeHandle } from '../../utils/cropRect'
+import type { LoadedImage } from '../../types/image'
+import type { SavedImage } from '../../hooks/useImageSave'
 
 const HANDLES: { id: ResizeHandle; cursor: string }[] = [
   { id: 'nw', cursor: 'cursor-nw-resize' },
@@ -10,12 +12,14 @@ const HANDLES: { id: ResizeHandle; cursor: string }[] = [
   { id: 'se', cursor: 'cursor-se-resize' },
 ]
 
-interface CropModalProps {
-  previewUrl: string | null
+interface ImageEditorProps {
+  image: LoadedImage
   presetIndex: number
   crop: CropRect | null
+  baseFileName: string
   isSaving: boolean
   error: string | null
+  lastSaved: SavedImage | null
   onSelectPreset: (index: number) => void
   onMeasure: (image: HTMLImageElement) => void
   onBeginDrag: (
@@ -24,40 +28,33 @@ interface CropModalProps {
   ) => void
   onPointerMove: (event: PointerEvent<HTMLElement>) => void
   onEndDrag: (event: PointerEvent<HTMLElement>) => void
-  onConfirm: () => void
-  onClose: () => void
+  onBaseFileNameChange: (value: string) => void
+  onSave: () => void
+  onChangeImage: () => void
 }
 
-export function CropModal({
-  previewUrl,
+export function ImageEditor({
+  image,
   presetIndex,
   crop,
+  baseFileName,
   isSaving,
   error,
+  lastSaved,
   onSelectPreset,
   onMeasure,
   onBeginDrag,
   onPointerMove,
   onEndDrag,
-  onConfirm,
-  onClose,
-}: CropModalProps) {
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose()
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose])
-
+  onBaseFileNameChange,
+  onSave,
+  onChangeImage,
+}: ImageEditorProps) {
   useEffect(() => {
     const handleResize = () => {
-      const image = document.getElementById('crop-preview')
-      if (image instanceof HTMLImageElement) {
-        onMeasure(image)
+      const node = document.getElementById('crop-preview')
+      if (node instanceof HTMLImageElement) {
+        onMeasure(node)
       }
     }
 
@@ -68,24 +65,8 @@ export function CropModal({
   const preset = ASPECT_PRESETS[presetIndex]
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="crop-modal-title"
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-black/60 p-4"
-    >
-      {/* 切り取り範囲の box-shadow は絶対配置で周囲を覆うため、UIをその上へ出す */}
-      <div className="relative z-10 text-center">
-        <h2 id="crop-modal-title" className="text-sm text-neutral-200">
-          切り取り範囲を選択してください
-        </h2>
-        <p className="mt-1 text-xs text-neutral-400">
-          ドラッグで移動 / 四隅でリサイズ ・ 出力: {preset.width}×
-          {preset.height}px
-        </p>
-      </div>
-
-      <div className="relative z-10 flex flex-wrap justify-center gap-2">
+    <div className="flex w-full max-w-3xl flex-col items-center gap-4">
+      <div className="flex flex-wrap justify-center gap-2">
         {ASPECT_PRESETS.map((item, index) => (
           <button
             key={item.label}
@@ -102,6 +83,11 @@ export function CropModal({
         ))}
       </div>
 
+      <p className="text-center text-xs text-neutral-400">
+        ドラッグで移動 / 四隅でリサイズ ・ 出力: {preset.width}×{preset.height}
+        px
+      </p>
+
       <div
         className="relative touch-none select-none"
         onPointerDown={(event) => onBeginDrag('move', event)}
@@ -109,11 +95,12 @@ export function CropModal({
         onPointerUp={onEndDrag}
         onPointerCancel={onEndDrag}
       >
-        {previewUrl && (
+        {/* 切り取り範囲外を暗くする box-shadow は 9999px 広がるので画像の中で切る */}
+        <div className="relative overflow-hidden">
           <img
             id="crop-preview"
-            src={previewUrl}
-            alt="切り取り対象の画像"
+            src={image.objectUrl}
+            alt={image.file.name}
             draggable={false}
             // キャッシュ済みの画像は onLoad が発火しないことがあるため、
             // マウント時点で読み込み済みなら直接計測する
@@ -123,12 +110,10 @@ export function CropModal({
               }
             }}
             onLoad={(event) => onMeasure(event.currentTarget)}
-            className="block max-h-[60vh] max-w-[90vw] cursor-move"
+            className="block max-h-[60vh] max-w-full cursor-move"
           />
-        )}
 
-        {crop && (
-          <>
+          {crop && (
             <div
               data-testid="crop-area"
               className="pointer-events-none absolute border-2 border-dashed border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.6)]"
@@ -139,35 +124,46 @@ export function CropModal({
                 height: crop.height,
               }}
             />
-            {HANDLES.map(({ id, cursor }) => (
-              <div
-                key={id}
-                data-testid={`crop-handle-${id}`}
-                onPointerDown={(event) => onBeginDrag(id, event)}
-                className={`absolute z-20 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-sm border-2 border-neutral-800 bg-white ${cursor}`}
-                style={{
-                  left:
-                    id === 'nw' || id === 'sw' ? crop.x : crop.x + crop.width,
-                  top:
-                    id === 'nw' || id === 'ne' ? crop.y : crop.y + crop.height,
-                }}
-              />
-            ))}
-          </>
-        )}
+          )}
+        </div>
+
+        {/* ハンドルは半分はみ出すので、暗転を切るコンテナの外に置く */}
+        {crop &&
+          HANDLES.map(({ id, cursor }) => (
+            <div
+              key={id}
+              data-testid={`crop-handle-${id}`}
+              onPointerDown={(event) => onBeginDrag(id, event)}
+              className={`absolute z-20 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-sm border-2 border-neutral-800 bg-white ${cursor}`}
+              style={{
+                left: id === 'nw' || id === 'sw' ? crop.x : crop.x + crop.width,
+                top: id === 'nw' || id === 'ne' ? crop.y : crop.y + crop.height,
+              }}
+            />
+          ))}
       </div>
 
-      {error && (
-        <p role="alert" className="relative z-10 text-sm text-red-400">
-          {error}
-        </p>
-      )}
+      <div className="flex w-full items-center gap-2">
+        <label
+          htmlFor="image-base-file-name"
+          className="shrink-0 text-sm text-neutral-400"
+        >
+          ファイル名
+        </label>
+        <input
+          id="image-base-file-name"
+          type="text"
+          value={baseFileName}
+          onChange={(event) => onBaseFileNameChange(event.target.value)}
+          className="w-full rounded-md border border-neutral-600 bg-neutral-900 px-3 py-1.5 text-sm text-neutral-100"
+        />
+      </div>
 
-      <div className="relative z-10 flex gap-3">
+      <div className="flex flex-wrap justify-center gap-2">
         <button
           type="button"
-          data-testid="crop-confirm-button"
-          onClick={onConfirm}
+          data-testid="crop-save-button"
+          onClick={onSave}
           disabled={isSaving || !crop}
           className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
@@ -175,14 +171,33 @@ export function CropModal({
         </button>
         <button
           type="button"
-          data-testid="crop-cancel-button"
-          onClick={onClose}
+          data-testid="change-image-button"
+          onClick={onChangeImage}
           disabled={isSaving}
           className="rounded-md bg-neutral-700 px-4 py-2 text-sm font-medium text-neutral-100 hover:bg-neutral-600 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          キャンセル
+          画像を変更
         </button>
       </div>
+
+      {error && (
+        <p role="alert" className="text-sm text-red-400">
+          {error}
+        </p>
+      )}
+
+      {lastSaved && (
+        <div className="flex items-center gap-3 rounded-md border border-neutral-700 p-2">
+          <img
+            src={lastSaved.objectUrl}
+            alt="直前に保存した画像"
+            className="h-16 w-auto rounded"
+          />
+          <p className="text-xs text-neutral-400">
+            保存しました: {lastSaved.filename}
+          </p>
+        </div>
+      )}
     </div>
   )
 }

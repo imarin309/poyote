@@ -1,0 +1,5 @@
+# SPAのルートだけを index.html にフォールバックさせる。
+# 全パスを対象にすると、存在しないJSやCSSにもHTMLが返って
+# 「MIME type of "text/html"」の原因が追いにくくなるため対象を絞る
+/movie  /index.html  200
+/image  /index.html  200

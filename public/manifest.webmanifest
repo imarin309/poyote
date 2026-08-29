@@ -1,7 +1,7 @@
 {
   "name": "poyote",
   "short_name": "poyote",
-  "description": "動画から好きなフレームを切り抜いて画像保存するツール",
+  "description": "動画や画像から公開用の画像を作るツール",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

@@ -4,6 +4,7 @@ import { ASPECT_PRESETS, presetRatio } from '../utils/aspectPresets'
 import {
   createInitialCrop,
   moveCrop,
+  rescaleCrop,
   resizeCrop,
   toSourceRect,
 } from '../utils/cropRect'
@@ -78,16 +79,14 @@ export function useImageCrop({ save }: UseImageCropOptions) {
         }
 
         // 画面回転やリサイズでは選択範囲を作り直さず、同じ比率で拡縮する
-        const scaleX = display.width / previous.display.width
-        const scaleY = display.height / previous.display.height
         return {
           display,
-          crop: {
-            x: previous.crop.x * scaleX,
-            y: previous.crop.y * scaleY,
-            width: previous.crop.width * scaleX,
-            height: previous.crop.height * scaleY,
-          },
+          crop: rescaleCrop(
+            previous.crop,
+            previous.display,
+            display,
+            presetRatio(ASPECT_PRESETS[presetIndex]),
+          ),
         }
       })
     },

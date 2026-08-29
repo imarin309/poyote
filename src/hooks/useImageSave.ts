@@ -15,6 +15,9 @@ export function useImageSave(baseFileName: string) {
   const [error, setError] = useState<string | null>(null)
   const [lastSaved, setLastSaved] = useState<SavedImage | null>(null)
   const lastSavedRef = useRef<SavedImage | null>(null)
+  // isSaving(state)はレンダーを挟むまで更新されないので、同じタイミングで
+  // 二重に呼ばれた場合の多重実行はrefで止める
+  const isSavingRef = useRef(false)
 
   useEffect(() => {
     lastSavedRef.current = lastSaved
@@ -30,10 +33,11 @@ export function useImageSave(baseFileName: string) {
 
   const save = useCallback(
     async (createBlob: () => Promise<Blob>): Promise<boolean> => {
-      if (isSaving) {
+      if (isSavingRef.current) {
         return false
       }
 
+      isSavingRef.current = true
       setIsSaving(true)
       setError(null)
 
@@ -57,10 +61,11 @@ export function useImageSave(baseFileName: string) {
         )
         return false
       } finally {
+        isSavingRef.current = false
         setIsSaving(false)
       }
     },
-    [baseFileName, isSaving],
+    [baseFileName],
   )
 
   return { save, isSaving, error, lastSaved }

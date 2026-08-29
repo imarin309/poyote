@@ -3,6 +3,7 @@ import {
   createInitialCrop,
   MIN_CROP_SIZE,
   moveCrop,
+  rescaleCrop,
   resizeCrop,
   toSourceRect,
 } from './cropRect'
@@ -156,6 +157,42 @@ describe('resizeCrop', () => {
     expect(crop.x).toBe(0)
     expect(crop.y).toBe(0)
     expect(crop.width).toBeGreaterThanOrEqual(0)
+  })
+})
+
+describe('rescaleCrop', () => {
+  const ratio = 16 / 9
+
+  it('表示サイズの変化にあわせて拡縮する', () => {
+    const crop = { x: 100, y: 50, width: 400, height: 225 }
+    const scaled = rescaleCrop(crop, BOUNDS, { width: 400, height: 225 }, ratio)
+    expect(scaled.x).toBeCloseTo(50)
+    expect(scaled.y).toBeCloseTo(25)
+    expect(scaled.width).toBeCloseTo(200)
+    expect(scaled.height).toBeCloseTo(112.5)
+  })
+
+  it('縦横の倍率がずれても比率を保つ', () => {
+    const crop = { x: 0, y: 0, width: 400, height: 225 }
+    // clientWidth/Height は整数に丸められるため縦横の倍率が一致しないことがある
+    const scaled = rescaleCrop(crop, BOUNDS, { width: 601, height: 337 }, ratio)
+    expect(scaled.width / scaled.height).toBeCloseTo(ratio)
+  })
+
+  it('拡縮した結果が表示領域からはみ出さない', () => {
+    const crop = { x: 0, y: 0, width: 800, height: 450 }
+    const scaled = rescaleCrop(crop, BOUNDS, { width: 800, height: 300 }, ratio)
+    expect(scaled.height).toBeLessThanOrEqual(300)
+    expect(scaled.width / scaled.height).toBeCloseTo(ratio)
+    expect(scaled.x + scaled.width).toBeLessThanOrEqual(800)
+    expect(scaled.y + scaled.height).toBeLessThanOrEqual(300)
+  })
+
+  it('元の表示サイズが0の場合は中央に作り直す', () => {
+    const crop = { x: 0, y: 0, width: 10, height: 10 }
+    expect(rescaleCrop(crop, { width: 0, height: 0 }, BOUNDS, ratio)).toEqual(
+      createInitialCrop(BOUNDS, ratio),
+    )
   })
 })
 

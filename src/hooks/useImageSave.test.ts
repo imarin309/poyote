@@ -60,6 +60,20 @@ describe('useImageSave', () => {
     expect(savedFilename()).toBe('image.jpg')
   })
 
+  it('同時に呼ばれても保存は1回だけ走る', async () => {
+    const { result } = renderHook(() => useImageSave('photo'))
+
+    let second = true
+    await act(async () => {
+      const first = result.current.save(createBlob)
+      second = await result.current.save(createBlob)
+      await first
+    })
+
+    expect(second).toBe(false)
+    expect(downloadBlob).toHaveBeenCalledTimes(1)
+  })
+
   it('保存に失敗するとエラーを持ちfalseを返す', async () => {
     const { result } = renderHook(() => useImageSave('photo'))
 

@@ -91,6 +91,37 @@ export function resizeCrop(
   }
 }
 
+// 画面回転やウィンドウのリサイズで表示サイズが変わったときに使う。
+// 幅と高さを別々に拡縮すると、clientWidth/Height の丸めのぶんだけ縦横比が
+// 崩れて選んだプリセットとずれるため、幅だけ拡縮して高さは比率から求める
+export function rescaleCrop(
+  crop: CropRect,
+  from: Size,
+  to: Size,
+  ratio: number,
+): CropRect {
+  if (from.width <= 0 || from.height <= 0) {
+    return createInitialCrop(to, ratio)
+  }
+
+  const scaleX = to.width / from.width
+  const scaleY = to.height / from.height
+
+  let width = crop.width * scaleX
+  let height = width / ratio
+  if (height > to.height) {
+    height = to.height
+    width = height * ratio
+  }
+
+  return {
+    x: clamp(crop.x * scaleX, 0, to.width - width),
+    y: clamp(crop.y * scaleY, 0, to.height - height),
+    width,
+    height,
+  }
+}
+
 export function toSourceRect(
   crop: CropRect,
   displaySize: Size,

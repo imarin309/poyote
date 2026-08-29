@@ -13,19 +13,15 @@ interface TopPageProps {
   onOpenHelp: () => void
 }
 
-const ROUTE_ICONS: Partial<Record<Route, string>> = {
-  video: '🎬',
-  image: '🖼️',
-}
-
 export function TopPage({ route, onNavigate, onOpenHelp }: TopPageProps) {
   return (
     <div className="flex min-h-screen flex-col items-center gap-8 bg-neutral-950 px-4 py-10 text-neutral-100">
       <Header route={route} onNavigate={onNavigate} onOpenHelp={onOpenHelp} />
 
-      <main className="flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-6">
+      <main className="flex w-full max-w-3xl flex-1 flex-col items-center justify-center">
         <div className="grid w-full gap-4 sm:grid-cols-2">
           {FEATURE_ROUTES.map((item) => (
+            // 別ページとしてブックマークや新規タブで開けるよう、実URLのリンクにする
             <a
               key={item}
               href={pathForRoute(item)}
@@ -44,9 +40,6 @@ export function TopPage({ route, onNavigate, onOpenHelp }: TopPageProps) {
               }}
               className="flex flex-col gap-2 rounded-xl border border-neutral-700 p-6 transition-colors hover:border-blue-400 hover:bg-neutral-900"
             >
-              <span aria-hidden className="text-3xl">
-                {ROUTE_ICONS[item]}
-              </span>
               <span className="text-lg font-semibold">
                 {ROUTE_LABELS[item]}
               </span>
@@ -56,10 +49,6 @@ export function TopPage({ route, onNavigate, onOpenHelp }: TopPageProps) {
             </a>
           ))}
         </div>
-
-        <p className="text-sm text-neutral-500">
-          読み込んだファイルは外部サーバーへ送信されません。すべての処理はブラウザ内で完結します。
-        </p>
       </main>
     </div>
   )

@@ -1,8 +1,4 @@
-import {
-  FEATURE_ROUTES,
-  ROUTE_DESCRIPTIONS,
-  ROUTE_LABELS,
-} from '../../types/route'
+import { ROUTE_DESCRIPTIONS } from '../../types/route'
 import type { Route } from '../../types/route'
 import { pathForRoute } from '../../utils/route'
 
@@ -49,33 +45,6 @@ export function Header({
           <h1 className="text-2xl font-semibold">poyote</h1>
         </a>
         <p className="text-sm text-neutral-400">{ROUTE_DESCRIPTIONS[route]}</p>
-        <nav
-          aria-label="機能"
-          className="mt-1 flex gap-1 rounded-full border border-neutral-700 p-1"
-        >
-          {FEATURE_ROUTES.map((item) => (
-            <a
-              key={item}
-              href={pathForRoute(item)}
-              aria-current={item === route ? 'page' : undefined}
-              data-testid={`nav-${item}`}
-              onClick={(event) => {
-                if (isModifiedClick(event)) {
-                  return
-                }
-                event.preventDefault()
-                onNavigate(item)
-              }}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                item === route
-                  ? 'bg-blue-600 text-white'
-                  : 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200'
-              }`}
-            >
-              {ROUTE_LABELS[item]}
-            </a>
-          ))}
-        </nav>
       </div>
       <div className="col-start-3 flex justify-end">
         <button

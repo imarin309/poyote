@@ -1,3 +1,4 @@
+import type { MouseEvent } from 'react'
 import { ROUTE_DESCRIPTIONS } from '../../types/route'
 import type { Route } from '../../types/route'
 import { pathForRoute } from '../../utils/route'
@@ -10,7 +11,7 @@ interface HeaderProps {
 }
 
 // 修飾キー付きのクリックはブラウザ本来の遷移に任せる
-function isModifiedClick(event: React.MouseEvent): boolean {
+function isModifiedClick(event: MouseEvent): boolean {
   return event.metaKey || event.ctrlKey || event.shiftKey || event.altKey
 }
 

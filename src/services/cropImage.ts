@@ -12,6 +12,11 @@ export async function cropImageToBlob(
     throw new Error('画像がまだ読み込まれていません。')
   }
 
+  // completeは読み込みに失敗した場合もtrueになるため、実サイズで届いたか確かめる
+  if (source.naturalWidth <= 0 || source.naturalHeight <= 0) {
+    throw new Error('画像を読み込めませんでした。')
+  }
+
   if (sourceRect.width <= 0 || sourceRect.height <= 0) {
     throw new Error('切り取り範囲が不正です。')
   }

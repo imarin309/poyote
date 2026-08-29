@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { downloadBlob } from '../services/downloadImage'
 import { buildCaptureFilename } from '../utils/fileName'
 
+// ファイル名は空にできるため、そのまま渡すと「.jpg」になってしまう
+const DEFAULT_BASE_FILE_NAME = 'image'
+
 export interface SavedImage {
   objectUrl: string
   filename: string
@@ -36,7 +39,9 @@ export function useImageSave(baseFileName: string) {
 
       try {
         const blob = await createBlob()
-        const filename = buildCaptureFilename(baseFileName)
+        const filename = buildCaptureFilename(
+          baseFileName.trim() || DEFAULT_BASE_FILE_NAME,
+        )
         downloadBlob(blob, filename)
 
         setLastSaved((previous) => {

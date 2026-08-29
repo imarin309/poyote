@@ -36,6 +36,17 @@ export function ImagePage({ route, onNavigate, onOpenHelp }: ImagePageProps) {
   const crop = useImageCrop({ save })
   const { open: openCrop, close: closeCrop, confirm: confirmCrop } = crop
 
+  // 読み込んだらそのまま切り取りに入る。キャンセルすると ImagePanel に戻る
+  const handleFileSelected = useCallback(
+    (file: File) => {
+      const loaded = loadFile(file)
+      if (loaded) {
+        openCrop(loaded.objectUrl)
+      }
+    },
+    [loadFile, openCrop],
+  )
+
   const handleCropConfirm = useCallback(async () => {
     if (await confirmCrop()) {
       closeCrop()
@@ -64,7 +75,10 @@ export function ImagePage({ route, onNavigate, onOpenHelp }: ImagePageProps) {
             lastSaved={lastSaved}
           />
         ) : (
-          <ImageDropZone onFileSelected={loadFile} error={imageError} />
+          <ImageDropZone
+            onFileSelected={handleFileSelected}
+            error={imageError}
+          />
         )}
       </div>
 

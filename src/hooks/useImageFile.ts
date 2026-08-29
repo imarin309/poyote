@@ -7,10 +7,11 @@ export function useImageFile() {
   const [error, setError] = useState<string | null>(null)
   const objectUrlRef = useRef<string | null>(null)
 
-  const loadFile = useCallback((file: File) => {
+  // 読み込み直後にそのまま切り取りを開始できるよう、読み込んだ画像を返す
+  const loadFile = useCallback((file: File): LoadedImage | null => {
     if (!isImageFile(file)) {
       setError('画像ファイルを選択してください。')
-      return
+      return null
     }
 
     if (objectUrlRef.current) {
@@ -19,8 +20,10 @@ export function useImageFile() {
 
     const objectUrl = URL.createObjectURL(file)
     objectUrlRef.current = objectUrl
+    const loaded = { file, objectUrl }
     setError(null)
-    setImage({ file, objectUrl })
+    setImage(loaded)
+    return loaded
   }, [])
 
   const clear = useCallback(() => {

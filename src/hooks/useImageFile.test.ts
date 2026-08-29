@@ -30,6 +30,30 @@ describe('useImageFile', () => {
     expect(result.current.error).toBeNull()
   })
 
+  it('読み込んだ画像を戻り値で返す', () => {
+    const { result } = renderHook(() => useImageFile())
+    const file = new File([''], 'photo.png', { type: 'image/png' })
+
+    let loaded: ReturnType<typeof result.current.loadFile> = null
+    act(() => {
+      loaded = result.current.loadFile(file)
+    })
+
+    expect(loaded).toEqual(result.current.image)
+  })
+
+  it('画像以外のファイルはnullを返す', () => {
+    const { result } = renderHook(() => useImageFile())
+    const file = new File([''], 'clip.mp4', { type: 'video/mp4' })
+
+    let loaded: ReturnType<typeof result.current.loadFile> = null
+    act(() => {
+      loaded = result.current.loadFile(file)
+    })
+
+    expect(loaded).toBeNull()
+  })
+
   it('画像以外のファイルはエラーになりimageは設定されない', () => {
     const { result } = renderHook(() => useImageFile())
     const file = new File([''], 'clip.mp4', { type: 'video/mp4' })

@@ -1,32 +1,58 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { Header } from './Header'
-import { MODE_DESCRIPTIONS, MODE_LABELS } from '../../types/mode'
+import { ROUTE_DESCRIPTIONS, ROUTE_LABELS } from '../../types/route'
 
 describe('Header', () => {
-  it('選択中のモードに応じた説明を表示する', () => {
-    render(<Header mode="image" onModeChange={vi.fn()} onOpenHelp={vi.fn()} />)
-    expect(screen.getByText(MODE_DESCRIPTIONS.image)).toBeInTheDocument()
+  it('現在のページに応じた説明を表示する', () => {
+    render(<Header route="image" onNavigate={vi.fn()} onOpenHelp={vi.fn()} />)
+    expect(screen.getByText(ROUTE_DESCRIPTIONS.image)).toBeInTheDocument()
   })
 
-  it('選択中のモードのタブだけがaria-selectedになる', () => {
-    render(<Header mode="video" onModeChange={vi.fn()} onOpenHelp={vi.fn()} />)
-    expect(screen.getByTestId('mode-tab-video')).toHaveAttribute(
-      'aria-selected',
-      'true',
-    )
-    expect(screen.getByTestId('mode-tab-image')).toHaveAttribute(
-      'aria-selected',
-      'false',
-    )
+  it('各ページのリンクを実URLで出す', () => {
+    render(<Header route="video" onNavigate={vi.fn()} onOpenHelp={vi.fn()} />)
+    expect(screen.getByTestId('nav-video')).toHaveAttribute('href', '/')
+    expect(screen.getByTestId('nav-image')).toHaveAttribute('href', '/image')
   })
 
-  it('タブのクリックでonModeChangeが呼ばれる', () => {
-    const onModeChange = vi.fn()
+  it('現在のページのリンクにaria-currentを付ける', () => {
+    render(<Header route="video" onNavigate={vi.fn()} onOpenHelp={vi.fn()} />)
+    expect(screen.getByTestId('nav-video')).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+    expect(screen.getByTestId('nav-image')).not.toHaveAttribute('aria-current')
+  })
+
+  it('クリックで既定の遷移を止めてonNavigateを呼ぶ', () => {
+    const onNavigate = vi.fn()
     render(
-      <Header mode="video" onModeChange={onModeChange} onOpenHelp={vi.fn()} />,
+      <Header route="video" onNavigate={onNavigate} onOpenHelp={vi.fn()} />,
     )
-    fireEvent.click(screen.getByRole('tab', { name: MODE_LABELS.image }))
-    expect(onModeChange).toHaveBeenCalledWith('image')
+
+    const link = screen.getByRole('link', { name: ROUTE_LABELS.image })
+    const event = new MouseEvent('click', { bubbles: true, cancelable: true })
+    fireEvent(link, event)
+
+    expect(onNavigate).toHaveBeenCalledWith('image')
+    expect(event.defaultPrevented).toBe(true)
+  })
+
+  it('修飾キー付きのクリックはブラウザ本来の遷移に任せる', () => {
+    const onNavigate = vi.fn()
+    render(
+      <Header route="video" onNavigate={onNavigate} onOpenHelp={vi.fn()} />,
+    )
+
+    const link = screen.getByRole('link', { name: ROUTE_LABELS.image })
+    const event = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      metaKey: true,
+    })
+    fireEvent(link, event)
+
+    expect(onNavigate).not.toHaveBeenCalled()
+    expect(event.defaultPrevented).toBe(false)
   })
 })

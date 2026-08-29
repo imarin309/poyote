@@ -36,7 +36,8 @@ interface CropOrigin {
 }
 
 interface UseCropEditorOptions {
-  onPause: () => void
+  // 動画フレームを開くときだけ必要
+  onPause?: () => void
   save: (createBlob: () => Promise<Blob>) => Promise<boolean>
 }
 
@@ -83,7 +84,7 @@ export function useCropEditor({ onPause, save }: UseCropEditorOptions) {
   // プレビューは表示用に再エンコードするが、保存時は劣化のない映像から直接切り取る
   const openVideoFrame = useCallback(
     async (video: HTMLVideoElement) => {
-      onPause()
+      onPause?.()
       setError(null)
 
       try {

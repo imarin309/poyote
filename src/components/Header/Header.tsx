@@ -1,19 +1,18 @@
-import { MODE_DESCRIPTIONS, MODE_LABELS } from '../../types/mode'
-import type { AppMode } from '../../types/mode'
-
-const MODES: AppMode[] = ['video', 'image']
+import { ROUTE_DESCRIPTIONS, ROUTE_LABELS, ROUTES } from '../../types/route'
+import type { Route } from '../../types/route'
+import { pathForRoute } from '../../utils/route'
 
 interface HeaderProps {
   bordered?: boolean
-  mode: AppMode
-  onModeChange: (mode: AppMode) => void
+  route: Route
+  onNavigate: (route: Route) => void
   onOpenHelp: () => void
 }
 
 export function Header({
   bordered = false,
-  mode,
-  onModeChange,
+  route,
+  onNavigate,
   onOpenHelp,
 }: HeaderProps) {
   return (
@@ -28,30 +27,41 @@ export function Header({
           <img src="/travel_anpan.png" alt="" className="h-8 w-8 rounded" />
           <h1 className="text-2xl font-semibold">poyote</h1>
         </div>
-        <p className="text-sm text-neutral-400">{MODE_DESCRIPTIONS[mode]}</p>
-        <div
-          role="tablist"
-          aria-label="モード"
+        <p className="text-sm text-neutral-400">{ROUTE_DESCRIPTIONS[route]}</p>
+        <nav
+          aria-label="機能"
           className="mt-1 flex gap-1 rounded-full border border-neutral-700 p-1"
         >
-          {MODES.map((item) => (
-            <button
+          {ROUTES.map((item) => (
+            // 別ページとしてブックマークや新規タブで開けるよう、実URLのリンクにする
+            <a
               key={item}
-              type="button"
-              role="tab"
-              aria-selected={item === mode}
-              data-testid={`mode-tab-${item}`}
-              onClick={() => onModeChange(item)}
+              href={pathForRoute(item)}
+              aria-current={item === route ? 'page' : undefined}
+              data-testid={`nav-${item}`}
+              onClick={(event) => {
+                // 修飾キー付きのクリックはブラウザ本来の遷移に任せる
+                if (
+                  event.metaKey ||
+                  event.ctrlKey ||
+                  event.shiftKey ||
+                  event.altKey
+                ) {
+                  return
+                }
+                event.preventDefault()
+                onNavigate(item)
+              }}
               className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                item === mode
+                item === route
                   ? 'bg-blue-600 text-white'
                   : 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200'
               }`}
             >
-              {MODE_LABELS[item]}
-            </button>
+              {ROUTE_LABELS[item]}
+            </a>
           ))}
-        </div>
+        </nav>
       </div>
       <div className="col-start-3 flex justify-end">
         <button

@@ -1,15 +1,15 @@
 import { useEffect } from 'react'
-import type { PointerEvent } from 'react'
+import type { KeyboardEvent, PointerEvent } from 'react'
 import { ASPECT_PRESETS } from '../../utils/aspectPresets'
 import type { CropRect, ResizeHandle } from '../../utils/cropRect'
 import type { LoadedImage } from '../../types/image'
 import type { SavedImage } from '../../hooks/useImageSave'
 
-const HANDLES: { id: ResizeHandle; cursor: string }[] = [
-  { id: 'nw', cursor: 'cursor-nw-resize' },
-  { id: 'ne', cursor: 'cursor-ne-resize' },
-  { id: 'sw', cursor: 'cursor-sw-resize' },
-  { id: 'se', cursor: 'cursor-se-resize' },
+const HANDLES: { id: ResizeHandle; cursor: string; label: string }[] = [
+  { id: 'nw', cursor: 'cursor-nw-resize', label: '左上' },
+  { id: 'ne', cursor: 'cursor-ne-resize', label: '右上' },
+  { id: 'sw', cursor: 'cursor-sw-resize', label: '左下' },
+  { id: 'se', cursor: 'cursor-se-resize', label: '右下' },
 ]
 
 interface ImageEditorProps {
@@ -28,6 +28,10 @@ interface ImageEditorProps {
   ) => void
   onPointerMove: (event: PointerEvent<HTMLElement>) => void
   onEndDrag: (event: PointerEvent<HTMLElement>) => void
+  onResizeByKey: (
+    handle: ResizeHandle,
+    event: KeyboardEvent<HTMLElement>,
+  ) => void
   onBaseFileNameChange: (value: string) => void
   onSave: () => void
   onChangeImage: () => void
@@ -46,6 +50,7 @@ export function ImageEditor({
   onBeginDrag,
   onPointerMove,
   onEndDrag,
+  onResizeByKey,
   onBaseFileNameChange,
   onSave,
   onChangeImage,
@@ -84,8 +89,8 @@ export function ImageEditor({
       </div>
 
       <p className="text-center text-xs text-neutral-400">
-        ドラッグで移動 / 四隅でリサイズ ・ 出力: {preset.width}×{preset.height}
-        px
+        ドラッグで移動 / 四隅でリサイズ（ハンドルは矢印キーでも動かせます）・
+        出力: {preset.width}×{preset.height}px
       </p>
 
       <div
@@ -129,11 +134,14 @@ export function ImageEditor({
 
         {/* ハンドルは半分はみ出すので、暗転を切るコンテナの外に置く */}
         {crop &&
-          HANDLES.map(({ id, cursor }) => (
-            <div
+          HANDLES.map(({ id, cursor, label }) => (
+            <button
               key={id}
+              type="button"
               data-testid={`crop-handle-${id}`}
+              aria-label={`切り取り範囲の${label}をリサイズ`}
               onPointerDown={(event) => onBeginDrag(id, event)}
+              onKeyDown={(event) => onResizeByKey(id, event)}
               className={`absolute z-20 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-sm border-2 border-neutral-800 bg-white ${cursor}`}
               style={{
                 left: id === 'nw' || id === 'sw' ? crop.x : crop.x + crop.width,

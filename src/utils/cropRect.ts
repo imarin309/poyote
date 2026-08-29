@@ -58,6 +58,7 @@ export function resizeCrop(
   start: CropRect,
   handle: ResizeHandle,
   deltaX: number,
+  deltaY: number,
   ratio: number,
   bounds: Size,
 ): CropRect {
@@ -72,7 +73,13 @@ export function resizeCrop(
   const availableHeight = growsDown ? bounds.height - anchorY : anchorY
   const maxWidth = Math.min(availableWidth, availableHeight * ratio)
 
-  const requested = start.width + (growsRight ? deltaX : -deltaX)
+  // 比率が固定なので幅だけで矩形が決まる。縦のドラッグ量も幅に換算したうえで、
+  // 大きく動いた側だけを使う（斜めに引いたとき倍の速さで伸びないように）
+  const growX = growsRight ? deltaX : -deltaX
+  const growY = (growsDown ? deltaY : -deltaY) * ratio
+  const growth = Math.abs(growY) > Math.abs(growX) ? growY : growX
+
+  const requested = start.width + growth
   const width = clamp(requested, Math.min(MIN_CROP_SIZE, maxWidth), maxWidth)
   const height = width / ratio
 

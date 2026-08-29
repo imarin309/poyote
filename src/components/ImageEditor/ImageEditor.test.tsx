@@ -27,6 +27,7 @@ function renderEditor(overrides: Partial<Props> = {}) {
     onBeginDrag: vi.fn(),
     onPointerMove: vi.fn(),
     onEndDrag: vi.fn(),
+    onResizeByKey: vi.fn(),
     onBaseFileNameChange: vi.fn(),
     onSave: vi.fn(),
     onChangeImage: vi.fn(),
@@ -85,6 +86,22 @@ describe('ImageEditor', () => {
     const props = renderEditor()
     fireEvent.pointerDown(screen.getByTestId('crop-handle-ne'))
     expect(props.onBeginDrag).toHaveBeenCalledWith('ne', expect.anything())
+  })
+
+  it('ハンドルは名前を持つボタンにする', () => {
+    renderEditor()
+    const handle = screen.getByTestId('crop-handle-se')
+    expect(handle.tagName).toBe('BUTTON')
+    expect(handle).toHaveAttribute('type', 'button')
+    expect(handle).toHaveAccessibleName('切り取り範囲の右下をリサイズ')
+  })
+
+  it('ハンドルは矢印キーでもリサイズできる', () => {
+    const props = renderEditor()
+    fireEvent.keyDown(screen.getByTestId('crop-handle-se'), {
+      key: 'ArrowDown',
+    })
+    expect(props.onResizeByKey).toHaveBeenCalledWith('se', expect.anything())
   })
 
   it('暗転が周囲へ広がらないよう画像のコンテナで切る', () => {

@@ -68,6 +68,7 @@ export function ImagePage({ route, onNavigate, onOpenHelp }: ImagePageProps) {
             onBeginDrag={crop.beginDrag}
             onPointerMove={crop.handlePointerMove}
             onEndDrag={crop.endDrag}
+            onResizeByKey={crop.resizeByKey}
             onBaseFileNameChange={setBaseFileName}
             onSave={handleSave}
             onChangeImage={clear}

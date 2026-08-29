@@ -8,7 +8,7 @@ import {
   toSourceRect,
 } from '../utils/cropRect'
 import type { CropRect, ResizeHandle, Size } from '../utils/cropRect'
-import type { PointerEvent } from 'react'
+import type { KeyboardEvent, PointerEvent } from 'react'
 
 type DragMode = 'move' | ResizeHandle
 
@@ -23,6 +23,13 @@ interface DragState {
 interface Geometry {
   display: Size
   crop: CropRect
+}
+
+const KEY_DIRECTIONS: Record<string, [number, number]> = {
+  ArrowLeft: [-1, 0],
+  ArrowRight: [1, 0],
+  ArrowUp: [0, -1],
+  ArrowDown: [0, 1],
 }
 
 interface UseImageCropOptions {
@@ -145,11 +152,44 @@ export function useImageCrop({ save }: UseImageCropOptions) {
                 drag.startCrop,
                 drag.mode,
                 deltaX,
+                deltaY,
                 presetRatio(ASPECT_PRESETS[presetIndex]),
                 previous.display,
               )
 
         return { ...previous, crop }
+      })
+    },
+    [presetIndex],
+  )
+
+  // ハンドルは button なのでフォーカスできる。押しても何も起きない偽の操作子に
+  // しないよう、矢印キーでもリサイズできるようにする
+  const resizeByKey = useCallback(
+    (handle: ResizeHandle, event: KeyboardEvent<HTMLElement>) => {
+      const direction = KEY_DIRECTIONS[event.key]
+      if (!direction) {
+        return
+      }
+
+      event.preventDefault()
+      const amount = event.shiftKey ? 20 : 4
+
+      setGeometry((previous) => {
+        if (!previous) {
+          return previous
+        }
+        return {
+          ...previous,
+          crop: resizeCrop(
+            previous.crop,
+            handle,
+            direction[0] * amount,
+            direction[1] * amount,
+            presetRatio(ASPECT_PRESETS[presetIndex]),
+            previous.display,
+          ),
+        }
       })
     },
     [presetIndex],
@@ -197,6 +237,7 @@ export function useImageCrop({ save }: UseImageCropOptions) {
     beginDrag,
     handlePointerMove,
     endDrag,
+    resizeByKey,
     confirm,
   }
 }

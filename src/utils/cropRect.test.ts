@@ -70,7 +70,7 @@ describe('resizeCrop', () => {
   const start = { x: 200, y: 100, width: 320, height: 180 }
 
   it('se ハンドルは左上を固定して比率を保つ', () => {
-    const crop = resizeCrop(start, 'se', 80, ratio, BOUNDS)
+    const crop = resizeCrop(start, 'se', 80, 0, ratio, BOUNDS)
     expect(crop.x).toBe(200)
     expect(crop.y).toBe(100)
     expect(crop.width).toBe(400)
@@ -78,7 +78,7 @@ describe('resizeCrop', () => {
   })
 
   it('nw ハンドルは右下を固定して左上へ広がる', () => {
-    const crop = resizeCrop(start, 'nw', -80, ratio, BOUNDS)
+    const crop = resizeCrop(start, 'nw', -80, 0, ratio, BOUNDS)
     expect(crop.width).toBe(400)
     expect(crop.height).toBeCloseTo(225)
     expect(crop.x + crop.width).toBe(520)
@@ -86,48 +86,73 @@ describe('resizeCrop', () => {
   })
 
   it('sw ハンドルは右上を固定する', () => {
-    const crop = resizeCrop(start, 'sw', -80, ratio, BOUNDS)
+    const crop = resizeCrop(start, 'sw', -80, 0, ratio, BOUNDS)
     expect(crop.x + crop.width).toBe(520)
     expect(crop.y).toBe(100)
     expect(crop.width).toBe(400)
   })
 
   it('ne ハンドルは左下を固定する', () => {
-    const crop = resizeCrop(start, 'ne', 80, ratio, BOUNDS)
+    const crop = resizeCrop(start, 'ne', 80, 0, ratio, BOUNDS)
     expect(crop.x).toBe(200)
     expect(crop.y + crop.height).toBe(280)
     expect(crop.width).toBe(400)
   })
 
+  it('縦方向のドラッグでもリサイズできる', () => {
+    const crop = resizeCrop(start, 'se', 0, 80, ratio, BOUNDS)
+    expect(crop.width).toBeCloseTo(320 + 80 * ratio)
+    expect(crop.x).toBe(200)
+    expect(crop.y).toBe(100)
+  })
+
+  it('上方向へ引くハンドルでも縦のドラッグが効く', () => {
+    const crop = resizeCrop(start, 'nw', 0, -80, ratio, BOUNDS)
+    expect(crop.width).toBeCloseTo(320 + 80 * ratio)
+    expect(crop.x + crop.width).toBe(520)
+    expect(crop.y + crop.height).toBe(280)
+  })
+
+  it('斜めのドラッグでは大きく動いた側だけを使う', () => {
+    const crop = resizeCrop(start, 'se', 80, 80, ratio, BOUNDS)
+    // 縦80pxは幅に換算すると80*ratio。横80pxとの合計にはしない
+    expect(crop.width).toBeCloseTo(320 + 80 * ratio)
+  })
+
+  it('縦に縮める方向のドラッグも効く', () => {
+    const crop = resizeCrop(start, 'se', 0, -50, ratio, BOUNDS)
+    expect(crop.width).toBeCloseTo(320 - 50 * ratio)
+  })
+
   it('最小サイズより小さくならない', () => {
-    const crop = resizeCrop(start, 'se', -999, ratio, BOUNDS)
+    const crop = resizeCrop(start, 'se', -999, 0, ratio, BOUNDS)
     expect(crop.width).toBe(MIN_CROP_SIZE)
     expect(crop.height).toBeCloseTo(MIN_CROP_SIZE / ratio)
   })
 
   it('拡大しても比率を保ったまま境界内に収まる', () => {
-    const crop = resizeCrop(start, 'se', 999, ratio, BOUNDS)
+    const crop = resizeCrop(start, 'se', 999, 0, ratio, BOUNDS)
     expect(crop.width / crop.height).toBeCloseTo(ratio)
     expect(crop.x + crop.width).toBeLessThanOrEqual(BOUNDS.width)
     expect(crop.y + crop.height).toBeLessThanOrEqual(BOUNDS.height)
   })
 
   it('幅側が先に境界へ当たる場合は幅で頭打ちになる', () => {
-    const crop = resizeCrop(start, 'se', 999, ratio, BOUNDS)
+    const crop = resizeCrop(start, 'se', 999, 0, ratio, BOUNDS)
     expect(crop.width).toBeCloseTo(600)
     expect(crop.height).toBeCloseTo(600 / ratio)
   })
 
   it('高さ側が先に境界へ当たる場合は高さで頭打ちになる', () => {
     const tall = { x: 50, y: 100, width: 320, height: 180 }
-    const crop = resizeCrop(tall, 'se', 999, ratio, BOUNDS)
+    const crop = resizeCrop(tall, 'se', 999, 0, ratio, BOUNDS)
     expect(crop.height).toBeCloseTo(350)
     expect(crop.width).toBeCloseTo(350 * ratio)
   })
 
   it('固定点に余白がない場合でも矩形が反転しない', () => {
     const flush = { x: 0, y: 0, width: 320, height: 180 }
-    const crop = resizeCrop(flush, 'nw', -80, ratio, BOUNDS)
+    const crop = resizeCrop(flush, 'nw', -80, 0, ratio, BOUNDS)
     expect(crop.x).toBe(0)
     expect(crop.y).toBe(0)
     expect(crop.width).toBeGreaterThanOrEqual(0)

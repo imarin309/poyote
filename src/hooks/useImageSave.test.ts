@@ -1,3 +1,4 @@
+import { StrictMode } from 'react'
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useImageSave } from './useImageSave'
@@ -58,6 +59,26 @@ describe('useImageSave', () => {
     })
 
     expect(savedFilename()).toBe('image.jpg')
+  })
+
+  it('保存のたびに古いプレビューURLを解放し、余分なURLを作らない', async () => {
+    // StrictModeはsetStateの更新関数を2回呼ぶ。その中でObject URLを作ると
+    // 捨てられた方が解放されずに残るため、実際のアプリと同じ条件で確かめる
+    const { result } = renderHook(() => useImageSave('photo'), {
+      wrapper: StrictMode,
+    })
+
+    await act(async () => {
+      await result.current.save(createBlob)
+    })
+    const first = result.current.lastSaved?.objectUrl
+
+    await act(async () => {
+      await result.current.save(createBlob)
+    })
+
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith(first)
+    expect(URL.createObjectURL).toHaveBeenCalledTimes(2)
   })
 
   it('同時に呼ばれても保存は1回だけ走る', async () => {

@@ -20,10 +20,6 @@ export function useImageSave(baseFileName: string) {
   const isSavingRef = useRef(false)
 
   useEffect(() => {
-    lastSavedRef.current = lastSaved
-  }, [lastSaved])
-
-  useEffect(() => {
     return () => {
       if (lastSavedRef.current) {
         URL.revokeObjectURL(lastSavedRef.current.objectUrl)
@@ -48,12 +44,14 @@ export function useImageSave(baseFileName: string) {
         )
         downloadBlob(blob, filename)
 
-        setLastSaved((previous) => {
-          if (previous) {
-            URL.revokeObjectURL(previous.objectUrl)
-          }
-          return { objectUrl: URL.createObjectURL(blob), filename }
-        })
+        // StrictModeはsetStateの更新関数を2回呼ぶため、その中でObject URLを
+        // 作ると捨てられる方が解放されずに残る。更新関数の外で作って差し替える
+        if (lastSavedRef.current) {
+          URL.revokeObjectURL(lastSavedRef.current.objectUrl)
+        }
+        const saved = { objectUrl: URL.createObjectURL(blob), filename }
+        lastSavedRef.current = saved
+        setLastSaved(saved)
         return true
       } catch (err) {
         setError(

@@ -1,8 +1,7 @@
-const DEFAULT_QUALITY = 0.85
+import { encodeCanvas } from './encodeImage'
 
 export async function captureFrameToBlob(
   video: HTMLVideoElement,
-  quality: number = DEFAULT_QUALITY,
 ): Promise<Blob> {
   if (video.readyState < video.HAVE_CURRENT_DATA) {
     throw new Error('動画フレームがまだ描画できる状態ではありません。')
@@ -19,13 +18,5 @@ export async function captureFrameToBlob(
 
   context.drawImage(video, 0, 0, canvas.width, canvas.height)
 
-  const blob = await new Promise<Blob | null>((resolve) => {
-    canvas.toBlob(resolve, 'image/jpeg', quality)
-  })
-
-  if (!blob) {
-    throw new Error('画像の生成に失敗しました。')
-  }
-
-  return blob
+  return encodeCanvas(canvas, 'jpeg')
 }

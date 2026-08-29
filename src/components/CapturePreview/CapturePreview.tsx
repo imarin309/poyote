@@ -1,13 +1,10 @@
-interface LastCapture {
-  objectUrl: string
-  filename: string
-  timeSeconds: number
-}
+import type { LastCapture } from '../../hooks/useCaptureSave'
 
 interface CapturePreviewProps {
   baseFileName: string
   onBaseFileNameChange: (value: string) => void
   onCapture: () => void
+  onOpenCrop: () => void
   isSaving: boolean
   disabled?: boolean
   error: string | null
@@ -18,6 +15,7 @@ export function CapturePreview({
   baseFileName,
   onBaseFileNameChange,
   onCapture,
+  onOpenCrop,
   isSaving,
   disabled = false,
   error,
@@ -41,15 +39,27 @@ export function CapturePreview({
         />
       </div>
 
-      <button
-        type="button"
-        data-testid="capture-button"
-        onClick={onCapture}
-        disabled={isSaving || disabled}
-        className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {isSaving ? '保存中…' : '現在のフレームを保存（S）'}
-      </button>
+      <div className="flex flex-wrap justify-center gap-2">
+        <button
+          type="button"
+          data-testid="capture-button"
+          onClick={onCapture}
+          disabled={isSaving || disabled}
+          className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isSaving ? '保存中…' : '現在のフレームを保存（S）'}
+        </button>
+
+        <button
+          type="button"
+          data-testid="crop-button"
+          onClick={onOpenCrop}
+          disabled={isSaving || disabled}
+          className="rounded-md bg-neutral-700 px-4 py-2 text-sm font-medium text-neutral-100 hover:bg-neutral-600 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          トリミングして保存
+        </button>
+      </div>
 
       {error && (
         <p role="alert" className="text-sm text-red-400">

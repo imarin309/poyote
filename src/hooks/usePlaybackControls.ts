@@ -87,6 +87,10 @@ export function usePlaybackControls() {
     [commitSeek],
   )
 
+  const pause = useCallback(() => {
+    nodeRef.current?.pause()
+  }, [])
+
   const togglePlayPause = useCallback(() => {
     const node = nodeRef.current
     if (!node) {
@@ -109,6 +113,7 @@ export function usePlaybackControls() {
     isPaused,
     seekBy,
     seekTo,
+    pause,
     togglePlayPause,
   }
 }

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { buildCaptureFilename, stripExtension } from './fileName'
+import {
+  buildCaptureFilename,
+  extensionForMimeType,
+  stripExtension,
+} from './fileName'
 
 describe('stripExtension', () => {
   it('拡張子を取り除く', () => {
@@ -19,8 +23,26 @@ describe('stripExtension', () => {
   })
 })
 
+describe('extensionForMimeType', () => {
+  it('webpはwebpを返す', () => {
+    expect(extensionForMimeType('image/webp')).toBe('webp')
+  })
+
+  it('jpegはjpgを返す', () => {
+    expect(extensionForMimeType('image/jpeg')).toBe('jpg')
+  })
+
+  it('未知の形式はbinを返す', () => {
+    expect(extensionForMimeType('application/octet-stream')).toBe('bin')
+  })
+})
+
 describe('buildCaptureFilename', () => {
-  it('ベース名をそのままJPEGファイル名にする', () => {
-    expect(buildCaptureFilename('clip')).toBe('clip.jpg')
+  it('webpならwebp拡張子にする', () => {
+    expect(buildCaptureFilename('clip', 'image/webp')).toBe('clip.webp')
+  })
+
+  it('jpegにフォールバックした場合はjpg拡張子にする', () => {
+    expect(buildCaptureFilename('clip', 'image/jpeg')).toBe('clip.jpg')
   })
 })

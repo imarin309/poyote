@@ -7,7 +7,8 @@ interface HeaderProps {
   bordered?: boolean
   route: Route
   onNavigate: (route: Route) => void
-  onOpenHelp: () => void
+  // トップページのようにヘルプを持たないページでは省く
+  onOpenHelp?: () => void
 }
 
 // 修飾キー付きのクリックはブラウザ本来の遷移に任せる
@@ -48,16 +49,18 @@ export function Header({
         <p className="text-sm text-neutral-400">{ROUTE_DESCRIPTIONS[route]}</p>
       </div>
       <div className="col-start-3 flex justify-end">
-        <button
-          type="button"
-          onClick={onOpenHelp}
-          className="inline-flex items-center gap-1.5 rounded-full border border-neutral-600 px-3 py-1.5 text-sm font-medium text-neutral-100 hover:border-blue-400 hover:bg-neutral-800"
-        >
-          <span className="flex h-4 w-4 items-center justify-center rounded-full border border-current text-[10px] font-bold">
-            ?
-          </span>
-          Help
-        </button>
+        {onOpenHelp && (
+          <button
+            type="button"
+            onClick={onOpenHelp}
+            className="inline-flex items-center gap-1.5 rounded-full border border-neutral-600 px-3 py-1.5 text-sm font-medium text-neutral-100 hover:border-blue-400 hover:bg-neutral-800"
+          >
+            <span className="flex h-4 w-4 items-center justify-center rounded-full border border-current text-[10px] font-bold">
+              ?
+            </span>
+            Help
+          </button>
+        )}
       </div>
     </header>
   )

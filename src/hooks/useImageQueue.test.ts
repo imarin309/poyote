@@ -131,6 +131,25 @@ describe('useImageQueue', () => {
     expect(result.current.savedCount).toBe(1)
   })
 
+  it('完了後にadvanceしても件数と現在位置は動かない', () => {
+    const { result } = renderHook(() => useImageQueue())
+
+    act(() => {
+      result.current.load([imageFile('a.png')])
+    })
+    act(() => {
+      result.current.advance(true)
+    })
+    act(() => {
+      result.current.advance(false)
+    })
+
+    expect(result.current.index).toBe(1)
+    expect(result.current.savedCount).toBe(1)
+    expect(result.current.skippedCount).toBe(0)
+    expect(result.current.isFinished).toBe(true)
+  })
+
   it('読み込み直しで前のObject URLをすべて解放する', () => {
     const { result } = renderHook(() => useImageQueue())
 

@@ -64,12 +64,19 @@ export function useImageQueue() {
   // 次の対象は再レンダー後の current から読む。setState の更新関数は同期実行
   // されないため、その中から次の画像を取り出して返そうとすると常に null になる
   const advance = useCallback((saved: boolean) => {
-    setState((previous) => ({
-      ...previous,
-      index: previous.index + 1,
-      savedCount: previous.savedCount + (saved ? 1 : 0),
-      skippedCount: previous.skippedCount + (saved ? 0 : 1),
-    }))
+    setState((previous) => {
+      // 完了後に呼ばれても件数が総数を超えないようにする（サマリが矛盾するため）
+      if (previous.index >= previous.images.length) {
+        return previous
+      }
+
+      return {
+        ...previous,
+        index: previous.index + 1,
+        savedCount: previous.savedCount + (saved ? 1 : 0),
+        skippedCount: previous.skippedCount + (saved ? 0 : 1),
+      }
+    })
   }, [])
 
   // 「全てキャンセル」。閉じる先が無いので、トリミングの回だけ終わらせて

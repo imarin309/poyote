@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { useImageQueue } from '../hooks/useImageQueue'
 import { useImageSave } from '../hooks/useImageSave'
 import { useImageCrop } from '../hooks/useImageCrop'
+import { useBatchConvert } from '../hooks/useBatchConvert'
 import { ImageDropZone } from '../components/ImageDropZone/ImageDropZone'
 import { ImageEditor } from '../components/ImageEditor/ImageEditor'
 import { Header } from '../components/Header/Header'
@@ -16,6 +17,7 @@ interface ImagePageProps {
 
 export function ImagePage({ route, onNavigate, onOpenHelp }: ImagePageProps) {
   const {
+    images,
     current: image,
     index,
     total,
@@ -48,14 +50,23 @@ export function ImagePage({ route, onNavigate, onOpenHelp }: ImagePageProps) {
   const crop = useImageCrop({ save })
   const { reset: resetCrop, confirm: confirmCrop } = crop
 
+  const {
+    isRunning: isConverting,
+    progress: convertProgress,
+    results: convertResults,
+    run: runBatchConvert,
+    reset: resetBatchConvert,
+  } = useBatchConvert()
+
   // 読み込んだらそのまま切り取り画面になる
   const handleFilesSelected = useCallback(
     (files: File[]) => {
       if (load(files)) {
         resetCrop()
+        resetBatchConvert()
       }
     },
-    [load, resetCrop],
+    [load, resetBatchConvert, resetCrop],
   )
 
   // 画像が変わるので、前の画像の切り取り範囲は捨てて作り直す
@@ -94,7 +105,13 @@ export function ImagePage({ route, onNavigate, onOpenHelp }: ImagePageProps) {
   const handleChangeImage = useCallback(() => {
     clear()
     resetCrop()
-  }, [clear, resetCrop])
+    resetBatchConvert()
+  }, [clear, resetBatchConvert, resetCrop])
+
+  // 切り取りを挟まず、読み込んだ全件を比率そのまま変換する
+  const handleBatchConvert = useCallback(() => {
+    void runBatchConvert(images)
+  }, [images, runBatchConvert])
 
   return (
     <div className="flex min-h-screen flex-col items-center gap-8 bg-neutral-950 px-4 py-10 text-neutral-100">
@@ -113,6 +130,9 @@ export function ImagePage({ route, onNavigate, onOpenHelp }: ImagePageProps) {
             crop={crop.crop}
             baseFileName={baseFileName}
             isSaving={isSaving}
+            isConverting={isConverting}
+            convertProgress={convertProgress}
+            convertResults={convertResults}
             error={saveError}
             notice={queueError}
             lastSaved={lastSaved}
@@ -128,6 +148,7 @@ export function ImagePage({ route, onNavigate, onOpenHelp }: ImagePageProps) {
             onCancelAll={handleCancelAll}
             onRestart={handleRestart}
             onChangeImage={handleChangeImage}
+            onBatchConvert={handleBatchConvert}
           />
         ) : (
           <ImageDropZone

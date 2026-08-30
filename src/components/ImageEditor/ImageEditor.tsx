@@ -1,9 +1,17 @@
 import { useEffect } from 'react'
 import type { KeyboardEvent, PointerEvent } from 'react'
 import { ASPECT_PRESETS } from '../../utils/aspectPresets'
+import { MAX_OUTPUT_BYTES } from '../../utils/imageQuality'
 import type { CropRect, ResizeHandle } from '../../utils/cropRect'
 import type { LoadedImage } from '../../types/image'
 import type { SavedImage } from '../../hooks/useImageSave'
+import type { ConvertResult } from '../../hooks/useBatchConvert'
+
+const MAX_OUTPUT_KILOBYTES = Math.round(MAX_OUTPUT_BYTES / 1024)
+
+function formatKilobytes(bytes: number): string {
+  return `${Math.round(bytes / 1024)}KB`
+}
 
 const HANDLES: { id: ResizeHandle; cursor: string; label: string }[] = [
   { id: 'nw', cursor: 'cursor-nw-resize', label: '左上' },
@@ -23,6 +31,9 @@ interface ImageEditorProps {
   crop: CropRect | null
   baseFileName: string
   isSaving: boolean
+  isConverting: boolean
+  convertProgress: { current: number; total: number }
+  convertResults: ConvertResult[]
   error: string | null
   notice: string | null
   lastSaved: SavedImage | null
@@ -44,6 +55,7 @@ interface ImageEditorProps {
   onCancelAll: () => void
   onRestart: () => void
   onChangeImage: () => void
+  onBatchConvert: () => void
 }
 
 export function ImageEditor({
@@ -57,6 +69,9 @@ export function ImageEditor({
   crop,
   baseFileName,
   isSaving,
+  isConverting,
+  convertProgress,
+  convertResults,
   error,
   notice,
   lastSaved,
@@ -72,6 +87,7 @@ export function ImageEditor({
   onCancelAll,
   onRestart,
   onChangeImage,
+  onBatchConvert,
 }: ImageEditorProps) {
   useEffect(() => {
     const handleResize = () => {
@@ -89,6 +105,8 @@ export function ImageEditor({
   // 複数枚のときだけ進捗・スキップ・全てキャンセルを出す
   const hasQueue = total > 1
   const unprocessed = Math.max(total - savedCount - skippedCount, 0)
+  // 切り取りの操作と一括変換は互いの結果を壊すので、走っている間は他方を止める
+  const isBusy = isSaving || isConverting
 
   return (
     <div className="flex w-full max-w-3xl flex-col items-center gap-4">
@@ -104,7 +122,8 @@ export function ImageEditor({
               type="button"
               data-testid="restart-queue-button"
               onClick={onRestart}
-              className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+              disabled={isConverting}
+              className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
               最初から切り取る
             </button>
@@ -112,7 +131,8 @@ export function ImageEditor({
               type="button"
               data-testid="change-image-button"
               onClick={onChangeImage}
-              className="rounded-md bg-neutral-700 px-4 py-2 text-sm font-medium text-neutral-100 hover:bg-neutral-600"
+              disabled={isConverting}
+              className="rounded-md bg-neutral-700 px-4 py-2 text-sm font-medium text-neutral-100 hover:bg-neutral-600 disabled:cursor-not-allowed disabled:opacity-50"
             >
               別の画像を選ぶ
             </button>
@@ -237,7 +257,7 @@ export function ImageEditor({
               type="button"
               data-testid="crop-save-button"
               onClick={onSave}
-              disabled={isSaving || !crop}
+              disabled={isBusy || !crop}
               className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSaving ? '保存中…' : 'この範囲で保存'}
@@ -247,7 +267,7 @@ export function ImageEditor({
                 type="button"
                 data-testid="skip-image-button"
                 onClick={onSkip}
-                disabled={isSaving}
+                disabled={isBusy}
                 className="rounded-md bg-neutral-700 px-4 py-2 text-sm font-medium text-neutral-100 hover:bg-neutral-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 この画像はスキップ
@@ -258,7 +278,7 @@ export function ImageEditor({
                 type="button"
                 data-testid="cancel-queue-button"
                 onClick={onCancelAll}
-                disabled={isSaving}
+                disabled={isBusy}
                 className="rounded-md bg-neutral-800 px-4 py-2 text-sm font-medium text-neutral-300 hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 全てキャンセル
@@ -268,7 +288,7 @@ export function ImageEditor({
               type="button"
               data-testid="change-image-button"
               onClick={onChangeImage}
-              disabled={isSaving}
+              disabled={isBusy}
               className="rounded-md bg-neutral-700 px-4 py-2 text-sm font-medium text-neutral-100 hover:bg-neutral-600 disabled:cursor-not-allowed disabled:opacity-50"
             >
               画像を変更
@@ -276,6 +296,62 @@ export function ImageEditor({
           </div>
         </>
       )}
+
+      {/* 切り取りとは別物なので、枠と見出しで「全件をそのまま変換する」側だと分かるようにする */}
+      <section
+        data-testid="batch-convert"
+        className="w-full rounded-lg border border-neutral-700 p-4"
+      >
+        <h2 className="text-sm font-medium text-neutral-200">
+          比率そのままで一括変換
+        </h2>
+        <p className="mt-1 text-xs text-neutral-400">
+          切り取らずに、読み込んだ {total} 件すべてを {MAX_OUTPUT_KILOBYTES}KB
+          以下に変換して保存します。縦横比もピクセル数も変わりません。
+        </p>
+
+        <button
+          type="button"
+          data-testid="batch-convert-button"
+          onClick={onBatchConvert}
+          disabled={isBusy}
+          className="mt-3 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isConverting
+            ? `変換中… ${convertProgress.current} / ${convertProgress.total} 件`
+            : `全 ${total} 件を変換して保存`}
+        </button>
+
+        {convertResults.length > 0 && (
+          <ul
+            data-testid="convert-results"
+            className="mt-3 flex flex-col gap-1 text-xs"
+          >
+            {/* 同名ファイルが並ぶとキーが衝突するので添字を混ぜる */}
+            {convertResults.map((result, resultIndex) => (
+              <li
+                key={`${result.filename}-${resultIndex}`}
+                className="flex flex-wrap items-baseline gap-2"
+              >
+                <span className="text-neutral-300">{result.filename}</span>
+                {result.error ? (
+                  <span className="text-red-400">{result.error}</span>
+                ) : (
+                  <span
+                    className={
+                      result.withinLimit ? 'text-neutral-500' : 'text-amber-400'
+                    }
+                  >
+                    {formatKilobytes(result.bytes)}
+                    {!result.withinLimit &&
+                      `（${MAX_OUTPUT_KILOBYTES}KBに収まりませんでした）`}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {/* 除外ファイルの警告はドロップゾーンが消えたあとにも見せる必要がある */}
       {notice && (

@@ -3,9 +3,9 @@ import { describe, expect, it, vi } from 'vitest'
 import { ImageDropZone } from './ImageDropZone'
 
 describe('ImageDropZone', () => {
-  it('ファイル選択でonFileSelectedが呼ばれる', () => {
-    const onFileSelected = vi.fn()
-    render(<ImageDropZone onFileSelected={onFileSelected} error={null} />)
+  it('ファイル選択でonFilesSelectedが呼ばれる', () => {
+    const onFilesSelected = vi.fn()
+    render(<ImageDropZone onFilesSelected={onFilesSelected} error={null} />)
 
     const file = new File([''], 'photo.png', { type: 'image/png' })
 
@@ -13,34 +13,36 @@ describe('ImageDropZone', () => {
       target: { files: [file] },
     })
 
-    expect(onFileSelected).toHaveBeenCalledWith(file)
+    expect(onFilesSelected).toHaveBeenCalledWith([file])
   })
 
-  it('ドロップでonFileSelectedが呼ばれる', () => {
-    const onFileSelected = vi.fn()
-    render(<ImageDropZone onFileSelected={onFileSelected} error={null} />)
+  it('複数のファイルをまとめて渡す', () => {
+    const onFilesSelected = vi.fn()
+    render(<ImageDropZone onFilesSelected={onFilesSelected} error={null} />)
 
-    const file = new File([''], 'photo.png', { type: 'image/png' })
+    const files = [
+      new File([''], 'a.png', { type: 'image/png' }),
+      new File([''], 'b.png', { type: 'image/png' }),
+    ]
 
     fireEvent.drop(screen.getByTestId('image-drop-zone'), {
-      dataTransfer: { files: [file] },
+      dataTransfer: { files },
     })
 
-    expect(onFileSelected).toHaveBeenCalledWith(file)
+    expect(onFilesSelected).toHaveBeenCalledWith(files)
   })
 
-  it('画像ファイルだけを選べるようにする', () => {
-    render(<ImageDropZone onFileSelected={vi.fn()} error={null} />)
-    expect(screen.getByTestId('image-file-input')).toHaveAttribute(
-      'accept',
-      'image/*',
-    )
+  it('画像ファイルを複数選べるようにする', () => {
+    render(<ImageDropZone onFilesSelected={vi.fn()} error={null} />)
+    const input = screen.getByTestId('image-file-input')
+    expect(input).toHaveAttribute('accept', 'image/*')
+    expect(input).toHaveAttribute('multiple')
   })
 
   it('エラーがある場合メッセージを表示する', () => {
     render(
       <ImageDropZone
-        onFileSelected={vi.fn()}
+        onFilesSelected={vi.fn()}
         error="画像ファイルを選択してください。"
       />,
     )

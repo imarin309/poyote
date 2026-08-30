@@ -2,20 +2,20 @@ import { useRef, useState } from 'react'
 import type { DragEvent, ChangeEvent } from 'react'
 
 interface ImageDropZoneProps {
-  onFileSelected: (file: File) => void
+  onFilesSelected: (files: File[]) => void
   error: string | null
 }
 
-export function ImageDropZone({ onFileSelected, error }: ImageDropZoneProps) {
+export function ImageDropZone({ onFilesSelected, error }: ImageDropZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault()
     setIsDragOver(false)
-    const file = event.dataTransfer.files[0]
-    if (file) {
-      onFileSelected(file)
+    const files = Array.from(event.dataTransfer.files)
+    if (files.length > 0) {
+      onFilesSelected(files)
     }
   }
 
@@ -30,9 +30,9 @@ export function ImageDropZone({ onFileSelected, error }: ImageDropZoneProps) {
   }
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      onFileSelected(file)
+    const files = Array.from(event.target.files ?? [])
+    if (files.length > 0) {
+      onFilesSelected(files)
     }
     event.target.value = ''
   }
@@ -51,7 +51,7 @@ export function ImageDropZone({ onFileSelected, error }: ImageDropZoneProps) {
         }`}
       >
         <p className="text-neutral-300">
-          画像ファイルをここへドラッグ＆ドロップ
+          画像ファイルをここへドラッグ＆ドロップ（複数可）
         </p>
         <p className="text-neutral-500">または</p>
         <button
@@ -66,6 +66,7 @@ export function ImageDropZone({ onFileSelected, error }: ImageDropZoneProps) {
           data-testid="image-file-input"
           type="file"
           accept="image/*"
+          multiple
           className="hidden"
           onChange={handleInputChange}
         />

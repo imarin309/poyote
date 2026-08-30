@@ -34,6 +34,8 @@ interface ImageEditorProps {
   isConverting: boolean
   convertProgress: { current: number; total: number }
   convertResults: ConvertResult[]
+  convertZipFilename: string | null
+  convertError: string | null
   error: string | null
   notice: string | null
   lastSaved: SavedImage | null
@@ -72,6 +74,8 @@ export function ImageEditor({
   isConverting,
   convertProgress,
   convertResults,
+  convertZipFilename,
+  convertError,
   error,
   notice,
   lastSaved,
@@ -307,7 +311,8 @@ export function ImageEditor({
         </h2>
         <p className="mt-1 text-xs text-neutral-400">
           切り取らずに、読み込んだ {total} 件すべてを {MAX_OUTPUT_KILOBYTES}KB
-          以下に変換して保存します。縦横比もピクセル数も変わりません。
+          以下に変換します。縦横比もピクセル数も変わりません。
+          ブラウザに複数のダウンロードを止められるため、結果はZIP1つにまとめて保存します。
         </p>
 
         <button
@@ -321,6 +326,21 @@ export function ImageEditor({
             ? `変換中… ${convertProgress.current} / ${convertProgress.total} 件`
             : `全 ${total} 件を変換して保存`}
         </button>
+
+        {convertZipFilename && (
+          <p
+            data-testid="convert-zip"
+            className="mt-3 text-xs text-emerald-400"
+          >
+            {convertZipFilename} に保存しました
+          </p>
+        )}
+
+        {convertError && (
+          <p data-testid="convert-error" className="mt-3 text-xs text-red-400">
+            {convertError}
+          </p>
+        )}
 
         {convertResults.length > 0 && (
           <ul

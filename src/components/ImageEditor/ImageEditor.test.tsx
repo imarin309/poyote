@@ -28,6 +28,8 @@ function renderEditor(overrides: Partial<Props> = {}) {
     isConverting: false,
     convertProgress: { current: 0, total: 0 },
     convertResults: [],
+    convertZipFilename: null,
+    convertError: null,
     error: null,
     notice: null,
     lastSaved: null,
@@ -322,6 +324,22 @@ describe('ImageEditor の一括変換', () => {
     const list = screen.getByTestId('convert-results')
     expect(list).toHaveTextContent('画像を読み込めませんでした。')
     expect(list).not.toHaveTextContent('0KB')
+  })
+
+  it('保存したZIPのファイル名を出す', () => {
+    renderEditor({ convertZipFilename: 'images-20260830-174100.zip' })
+
+    expect(screen.getByTestId('convert-zip')).toHaveTextContent(
+      'images-20260830-174100.zip に保存しました',
+    )
+  })
+
+  it('ZIPの作成に失敗したら理由を出す', () => {
+    renderEditor({ convertError: 'ZIPの作成に失敗しました。' })
+
+    expect(screen.getByTestId('convert-error')).toHaveTextContent(
+      'ZIPの作成に失敗しました。',
+    )
   })
 
   // 同名ファイルが並んでもキーが衝突しないこと

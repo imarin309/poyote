@@ -54,6 +54,8 @@ export function ImagePage({ route, onNavigate, onOpenHelp }: ImagePageProps) {
     isRunning: isConverting,
     progress: convertProgress,
     results: convertResults,
+    zipFilename: convertZipFilename,
+    error: convertError,
     run: runBatchConvert,
     reset: resetBatchConvert,
   } = useBatchConvert()
@@ -133,6 +135,8 @@ export function ImagePage({ route, onNavigate, onOpenHelp }: ImagePageProps) {
             isConverting={isConverting}
             convertProgress={convertProgress}
             convertResults={convertResults}
+            convertZipFilename={convertZipFilename}
+            convertError={convertError}
             error={saveError}
             notice={queueError}
             lastSaved={lastSaved}

@@ -179,17 +179,40 @@ describe('ImagePage の一括変換', () => {
     vi.unstubAllGlobals()
   })
 
-  it('読み込んだ全件を比率そのまま変換して保存する', async () => {
+  // 1件ずつダウンロードするとブラウザに2件目以降を止められるため、ZIPを1つだけ保存する
+  it('読み込んだ全件を比率そのまま変換し、ZIP1つにまとめて保存する', async () => {
     renderPage()
     selectFiles(imageFile('a.png'), imageFile('b.png'))
 
     fireEvent.click(screen.getByTestId('batch-convert-button'))
 
-    const results = await screen.findByTestId('convert-results')
+    const zip = await screen.findByTestId('convert-zip')
+    const results = screen.getByTestId('convert-results')
     expect(convertImageToBlob).toHaveBeenCalledTimes(2)
-    expect(downloadBlob).toHaveBeenCalledTimes(2)
+    expect(downloadBlob).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(downloadBlob).mock.calls[0][1]).toMatch(
+      /^images-\d{8}-\d{6}\.zip$/,
+    )
+    expect(zip).toHaveTextContent('.zip に保存しました')
     expect(results).toHaveTextContent('a.webp')
     expect(results).toHaveTextContent('b.webp')
+  })
+
+  // 全件失敗したときに中身の無いZIPを掴ませない
+  it('1件も変換できなかったときはZIPを保存しない', async () => {
+    vi.mocked(convertImageToBlob).mockRejectedValueOnce(
+      new Error('画像を読み込めませんでした。'),
+    )
+
+    renderPage()
+    selectFiles(imageFile('a.png'))
+
+    fireEvent.click(screen.getByTestId('batch-convert-button'))
+
+    const results = await screen.findByTestId('convert-results')
+    expect(results).toHaveTextContent('画像を読み込めませんでした。')
+    expect(downloadBlob).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('convert-zip')).not.toBeInTheDocument()
   })
 
   // 「全てキャンセル」はトリミングの回を中止するだけで、画像は一括変換に使える

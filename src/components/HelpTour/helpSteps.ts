@@ -75,7 +75,7 @@ export const imageHelpSteps: HelpStep[] = [
   {
     icon: '⚡',
     title: '比率を変えずに容量だけ落とす',
-    description: `切り取りが要らないときは「比率そのままで一括変換」を使います。縦横比もピクセル数も変えず、${MAX_OUTPUT_KILOBYTES}KB以下を目指して全件を変換・保存します。`,
+    description: `切り取りが要らないときは「比率そのままで一括変換」を使います。縦横比もピクセル数も変えず、${MAX_OUTPUT_KILOBYTES}KB以下を目指して全件を変換します。保存はZIP1つにまとめて行うので、展開して取り出してください。`,
   },
   {
     icon: '💾',

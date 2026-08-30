@@ -27,11 +27,8 @@ export function useImageQueue() {
   }, [])
 
   useEffect(() => {
-    return () => {
-      objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url))
-      objectUrlsRef.current = []
-    }
-  }, [])
+    return revokeAll
+  }, [revokeAll])
 
   // 読み込み直後にそのまま切り取りを開始できるよう、先頭の画像を返す
   const load = useCallback(
@@ -64,23 +61,16 @@ export function useImageQueue() {
     [revokeAll],
   )
 
-  // 次の対象を返す。最後まで進んだ場合は null。
-  // setState の更新関数は同期実行されないため、次の画像はレンダー時点の state から求める
-  const advance = useCallback(
-    (saved: boolean): LoadedImage | null => {
-      const nextIndex = state.index + 1
-
-      setState((previous) => ({
-        ...previous,
-        index: previous.index + 1,
-        savedCount: previous.savedCount + (saved ? 1 : 0),
-        skippedCount: previous.skippedCount + (saved ? 0 : 1),
-      }))
-
-      return state.images[nextIndex] ?? null
-    },
-    [state],
-  )
+  // 次の対象は再レンダー後の current から読む。setState の更新関数は同期実行
+  // されないため、その中から次の画像を取り出して返そうとすると常に null になる
+  const advance = useCallback((saved: boolean) => {
+    setState((previous) => ({
+      ...previous,
+      index: previous.index + 1,
+      savedCount: previous.savedCount + (saved ? 1 : 0),
+      skippedCount: previous.skippedCount + (saved ? 0 : 1),
+    }))
+  }, [])
 
   // 「全てキャンセル」。閉じる先が無いので、トリミングの回だけ終わらせて
   // 読み込んだ画像は残す（あとで一括変換に使うため）

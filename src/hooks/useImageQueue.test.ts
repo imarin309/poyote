@@ -66,24 +66,40 @@ describe('useImageQueue', () => {
     expect(result.current.error).toBe('画像ファイルを選択してください。')
   })
 
-  // setStateの更新関数の中から次を取り出すと同期実行されないため常にnullになる
-  it('advanceは次の画像をその場で返し、保存件数を数える', () => {
+  // setStateの更新関数は同期実行されないので、次の画像はcurrentから読む
+  it('advanceで次の画像に進み、保存件数を数える', () => {
     const { result } = renderHook(() => useImageQueue())
     const files = [imageFile('a.png'), imageFile('b.png')]
 
     act(() => {
       result.current.load(files)
     })
-
-    const advanced: { value: LoadedImage | null } = { value: null }
     act(() => {
-      advanced.value = result.current.advance(true)
+      result.current.advance(true)
     })
 
-    expect(advanced.value?.file).toBe(files[1])
+    expect(result.current.current?.file).toBe(files[1])
     expect(result.current.index).toBe(1)
     expect(result.current.savedCount).toBe(1)
     expect(result.current.isFinished).toBe(false)
+  })
+
+  it('連続でadvanceしても件数と現在位置がずれない', () => {
+    const { result } = renderHook(() => useImageQueue())
+    const files = [imageFile('a.png'), imageFile('b.png'), imageFile('c.png')]
+
+    act(() => {
+      result.current.load(files)
+    })
+    act(() => {
+      result.current.advance(true)
+      result.current.advance(false)
+    })
+
+    expect(result.current.index).toBe(2)
+    expect(result.current.current?.file).toBe(files[2])
+    expect(result.current.savedCount).toBe(1)
+    expect(result.current.skippedCount).toBe(1)
   })
 
   it('スキップはskippedCountを数える', () => {
@@ -100,19 +116,16 @@ describe('useImageQueue', () => {
     expect(result.current.skippedCount).toBe(1)
   })
 
-  it('最後まで進むとnullを返して完了状態になる', () => {
+  it('最後まで進むと完了状態になる', () => {
     const { result } = renderHook(() => useImageQueue())
 
     act(() => {
       result.current.load([imageFile('a.png')])
     })
-
-    const advanced: { value: LoadedImage | null } = { value: null }
     act(() => {
-      advanced.value = result.current.advance(true)
+      result.current.advance(true)
     })
 
-    expect(advanced.value).toBeNull()
     expect(result.current.current).toBeNull()
     expect(result.current.isFinished).toBe(true)
     expect(result.current.savedCount).toBe(1)

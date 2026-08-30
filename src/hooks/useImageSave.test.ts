@@ -8,7 +8,7 @@ vi.mock('../services/downloadImage', () => ({
   downloadBlob: vi.fn(),
 }))
 
-const createBlob = () => Promise.resolve(new Blob([''], { type: 'image/jpeg' }))
+const createBlob = () => Promise.resolve(new Blob([''], { type: 'image/webp' }))
 
 function savedFilename(): string {
   return vi.mocked(downloadBlob).mock.calls[0][1]
@@ -30,15 +30,27 @@ describe('useImageSave', () => {
     vi.unstubAllGlobals()
   })
 
-  it('ベース名にjpgの拡張子を付けて保存する', async () => {
+  it('生成できた形式から拡張子を決めて保存する', async () => {
     const { result } = renderHook(() => useImageSave('photo'))
 
     await act(async () => {
       await result.current.save(createBlob)
     })
 
+    expect(savedFilename()).toBe('photo.webp')
+    expect(result.current.lastSaved?.filename).toBe('photo.webp')
+  })
+
+  it('jpegにフォールバックした場合はjpgの拡張子になる', async () => {
+    const { result } = renderHook(() => useImageSave('photo'))
+
+    await act(async () => {
+      await result.current.save(() =>
+        Promise.resolve(new Blob([''], { type: 'image/jpeg' })),
+      )
+    })
+
     expect(savedFilename()).toBe('photo.jpg')
-    expect(result.current.lastSaved?.filename).toBe('photo.jpg')
   })
 
   it('ベース名が空の場合は既定名にフォールバックする', async () => {
@@ -48,7 +60,7 @@ describe('useImageSave', () => {
       await result.current.save(createBlob)
     })
 
-    expect(savedFilename()).toBe('image.jpg')
+    expect(savedFilename()).toBe('image.webp')
   })
 
   it('ベース名が空白のみの場合も既定名にフォールバックする', async () => {
@@ -58,7 +70,7 @@ describe('useImageSave', () => {
       await result.current.save(createBlob)
     })
 
-    expect(savedFilename()).toBe('image.jpg')
+    expect(savedFilename()).toBe('image.webp')
   })
 
   it('保存のたびに古いプレビューURLを解放し、余分なURLを作らない', async () => {

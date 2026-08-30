@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { downloadBlob } from '../services/downloadImage'
-import { buildCaptureFilename } from '../utils/fileName'
+import { buildImageFilename } from '../utils/fileName'
 
-// ファイル名は空にできるため、そのまま渡すと「.jpg」になってしまう
+// ファイル名は空にできるため、そのまま渡すと「.webp」になってしまう
 const DEFAULT_BASE_FILE_NAME = 'image'
 
 export interface SavedImage {
@@ -39,8 +39,10 @@ export function useImageSave(baseFileName: string) {
 
       try {
         const blob = await createBlob()
-        const filename = buildCaptureFilename(
+        // 拡張子は指定した形式ではなく、実際に生成できた形式から決める
+        const filename = buildImageFilename(
           baseFileName.trim() || DEFAULT_BASE_FILE_NAME,
+          blob.type,
         )
         downloadBlob(blob, filename)
 

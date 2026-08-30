@@ -10,13 +10,13 @@ import { pathForRoute } from '../utils/route'
 interface TopPageProps {
   route: Route
   onNavigate: (route: Route) => void
-  onOpenHelp: () => void
 }
 
-export function TopPage({ route, onNavigate, onOpenHelp }: TopPageProps) {
+export function TopPage({ route, onNavigate }: TopPageProps) {
   return (
     <div className="flex min-h-screen flex-col items-center gap-8 bg-neutral-950 px-4 py-10 text-neutral-100">
-      <Header route={route} onNavigate={onNavigate} onOpenHelp={onOpenHelp} />
+      {/* トップは機能を選ぶだけなので、ページ固有のヘルプは出さない */}
+      <Header route={route} onNavigate={onNavigate} />
 
       <main className="flex w-full max-w-3xl flex-1 flex-col items-center justify-center">
         <div className="grid w-full gap-4 sm:grid-cols-2">

@@ -45,4 +45,9 @@ describe('Header', () => {
     expect(onNavigate).not.toHaveBeenCalled()
     expect(event.defaultPrevented).toBe(false)
   })
+
+  it('onOpenHelpを渡さないページではヘルプボタンを出さない', () => {
+    render(<Header route="top" onNavigate={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: /Help/ })).toBeNull()
+  })
 })

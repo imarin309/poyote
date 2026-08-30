@@ -25,6 +25,11 @@ function renderEditor(overrides: Partial<Props> = {}) {
     crop,
     baseFileName: 'photo',
     isSaving: false,
+    isConverting: false,
+    convertProgress: { current: 0, total: 0 },
+    convertResults: [],
+    convertZipFilename: null,
+    convertError: null,
     error: null,
     notice: null,
     lastSaved: null,
@@ -40,6 +45,7 @@ function renderEditor(overrides: Partial<Props> = {}) {
     onCancelAll: vi.fn(),
     onRestart: vi.fn(),
     onChangeImage: vi.fn(),
+    onBatchConvert: vi.fn(),
     ...overrides,
   }
 
@@ -244,5 +250,107 @@ describe('ImageEditor の複数枚処理', () => {
     const props = renderEditor({ image: null, isFinished: true, total: 2 })
     fireEvent.click(screen.getByTestId('change-image-button'))
     expect(props.onChangeImage).toHaveBeenCalled()
+  })
+})
+
+describe('ImageEditor の一括変換', () => {
+  it('切り取りと並べて一括変換の入口を出す', () => {
+    renderEditor({ total: 3 })
+    expect(screen.getByTestId('batch-convert')).toHaveTextContent(
+      '比率そのままで一括変換',
+    )
+    expect(screen.getByTestId('batch-convert-button')).toHaveTextContent(
+      '全 3 件を変換して保存',
+    )
+  })
+
+  // 「全てキャンセル」で残した画像は一括変換に使えるようにする
+  it('切り取りを終えたあとも一括変換できる', () => {
+    const props = renderEditor({ image: null, isFinished: true, total: 2 })
+    fireEvent.click(screen.getByTestId('batch-convert-button'))
+    expect(props.onBatchConvert).toHaveBeenCalled()
+  })
+
+  it('変換中は進捗を出して切り取り操作を止める', () => {
+    renderEditor({
+      total: 3,
+      isConverting: true,
+      convertProgress: { current: 1, total: 3 },
+    })
+
+    expect(screen.getByTestId('batch-convert-button')).toHaveTextContent(
+      '変換中… 1 / 3 件',
+    )
+    expect(screen.getByTestId('batch-convert-button')).toBeDisabled()
+    expect(screen.getByTestId('crop-save-button')).toBeDisabled()
+  })
+
+  it('変換結果をファイル名と容量の一覧で出す', () => {
+    renderEditor({
+      convertResults: [
+        { filename: 'a.webp', bytes: 102400, withinLimit: true, error: null },
+      ],
+    })
+
+    const list = screen.getByTestId('convert-results')
+    expect(list).toHaveTextContent('a.webp')
+    expect(list).toHaveTextContent('100KB')
+  })
+
+  it('上限に収まらなかったものを警告として出す', () => {
+    renderEditor({
+      convertResults: [
+        { filename: 'a.webp', bytes: 307200, withinLimit: false, error: null },
+      ],
+    })
+
+    expect(screen.getByTestId('convert-results')).toHaveTextContent(
+      '200KBに収まりませんでした',
+    )
+  })
+
+  it('失敗したものは容量ではなく理由を出す', () => {
+    renderEditor({
+      convertResults: [
+        {
+          filename: 'broken.png',
+          bytes: 0,
+          withinLimit: false,
+          error: '画像を読み込めませんでした。',
+        },
+      ],
+    })
+
+    const list = screen.getByTestId('convert-results')
+    expect(list).toHaveTextContent('画像を読み込めませんでした。')
+    expect(list).not.toHaveTextContent('0KB')
+  })
+
+  it('保存したZIPのファイル名を出す', () => {
+    renderEditor({ convertZipFilename: 'images-20260830-174100.zip' })
+
+    expect(screen.getByTestId('convert-zip')).toHaveTextContent(
+      'images-20260830-174100.zip に保存しました',
+    )
+  })
+
+  it('ZIPの作成に失敗したら理由を出す', () => {
+    renderEditor({ convertError: 'ZIPの作成に失敗しました。' })
+
+    expect(screen.getByTestId('convert-error')).toHaveTextContent(
+      'ZIPの作成に失敗しました。',
+    )
+  })
+
+  // 同名ファイルが並んでもキーが衝突しないこと
+  it('同じ名前の結果が並んでも全件表示する', () => {
+    renderEditor({
+      convertResults: [
+        { filename: 'a.webp', bytes: 1024, withinLimit: true, error: null },
+        { filename: 'a.webp', bytes: 2048, withinLimit: true, error: null },
+      ],
+    })
+
+    expect(screen.getAllByText('a.webp')).toHaveLength(2)
   })
 })

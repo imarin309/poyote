@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { helpSteps } from './helpSteps'
+import type { HelpStep } from './helpSteps'
 
 interface HelpTourProps {
+  steps: HelpStep[]
   onClose: () => void
 }
 
-export function HelpTour({ onClose }: HelpTourProps) {
+export function HelpTour({ steps, onClose }: HelpTourProps) {
   const [stepIndex, setStepIndex] = useState(0)
 
   useEffect(() => {
@@ -13,7 +14,7 @@ export function HelpTour({ onClose }: HelpTourProps) {
       if (event.key === 'Escape') {
         onClose()
       } else if (event.key === 'ArrowRight') {
-        setStepIndex((index) => Math.min(index + 1, helpSteps.length - 1))
+        setStepIndex((index) => Math.min(index + 1, steps.length - 1))
       } else if (event.key === 'ArrowLeft') {
         setStepIndex((index) => Math.max(index - 1, 0))
       }
@@ -21,11 +22,11 @@ export function HelpTour({ onClose }: HelpTourProps) {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose])
+  }, [onClose, steps.length])
 
-  const step = helpSteps[stepIndex]
+  const step = steps[stepIndex]
   const isFirstStep = stepIndex === 0
-  const isLastStep = stepIndex === helpSteps.length - 1
+  const isLastStep = stepIndex === steps.length - 1
 
   return (
     <div
@@ -44,7 +45,7 @@ export function HelpTour({ onClose }: HelpTourProps) {
       >
         <div className="relative flex h-36 items-center justify-center border-b border-neutral-800 bg-neutral-800/60 p-3">
           <span className="absolute top-3 left-4 text-xs tabular-nums text-neutral-500">
-            {stepIndex + 1} / {helpSteps.length}
+            {stepIndex + 1} / {steps.length}
           </span>
           {step.image ? (
             <img
@@ -95,7 +96,7 @@ export function HelpTour({ onClose }: HelpTourProps) {
           </button>
 
           <div className="flex gap-1.5">
-            {helpSteps.map((_, index) => (
+            {steps.map((_, index) => (
               <span
                 key={index}
                 className={`h-1.5 rounded-full transition-all ${

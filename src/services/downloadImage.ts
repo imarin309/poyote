@@ -1,3 +1,7 @@
+// click直後に解放するとダウンロードが始まる前にURLが消えることがあるため、
+// 少し待ってから解放する
+const REVOKE_DELAY_MS = 1000
+
 export function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
@@ -6,5 +10,5 @@ export function downloadBlob(blob: Blob, filename: string): void {
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
-  URL.revokeObjectURL(url)
+  setTimeout(() => URL.revokeObjectURL(url), REVOKE_DELAY_MS)
 }

@@ -31,3 +31,19 @@ export function buildImageFilename(
 ): string {
   return `${baseFileName}.${extensionForMimeType(mimeType)}`
 }
+
+// 一括変換は1回のダウンロードにまとめるため、実行のたびに区別できるよう日時を入れる
+export function buildZipFilename(date: Date = new Date()): string {
+  const pad = (value: number) => String(value).padStart(2, '0')
+  const stamp = [
+    date.getFullYear(),
+    pad(date.getMonth() + 1),
+    pad(date.getDate()),
+    '-',
+    pad(date.getHours()),
+    pad(date.getMinutes()),
+    pad(date.getSeconds()),
+  ].join('')
+
+  return `images-${stamp}.zip`
+}

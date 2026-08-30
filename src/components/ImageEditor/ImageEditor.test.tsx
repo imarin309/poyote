@@ -16,11 +16,17 @@ type Props = Parameters<typeof ImageEditor>[0]
 function renderEditor(overrides: Partial<Props> = {}) {
   const props: Props = {
     image,
+    index: 0,
+    total: 1,
+    savedCount: 0,
+    skippedCount: 0,
+    isFinished: false,
     presetIndex: 0,
     crop,
     baseFileName: 'photo',
     isSaving: false,
     error: null,
+    notice: null,
     lastSaved: null,
     onSelectPreset: vi.fn(),
     onMeasure: vi.fn(),
@@ -30,6 +36,9 @@ function renderEditor(overrides: Partial<Props> = {}) {
     onResizeByKey: vi.fn(),
     onBaseFileNameChange: vi.fn(),
     onSave: vi.fn(),
+    onSkip: vi.fn(),
+    onCancelAll: vi.fn(),
+    onRestart: vi.fn(),
     onChangeImage: vi.fn(),
     ...overrides,
   }
@@ -158,5 +167,82 @@ describe('ImageEditor', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(
       '画像の保存に失敗しました。',
     )
+  })
+
+  // 読み込み成功と同時にドロップゾーンは消えるので、警告はここで見せる
+  it('除外ファイルの警告を表示する', () => {
+    renderEditor({ notice: '画像でないファイル1件を除外しました。' })
+    expect(screen.getByTestId('image-notice')).toHaveTextContent(
+      '画像でないファイル1件を除外しました。',
+    )
+  })
+})
+
+describe('ImageEditor の複数枚処理', () => {
+  it('複数枚のときは進捗を表示する', () => {
+    renderEditor({ index: 1, total: 3 })
+    expect(screen.getByTestId('queue-progress')).toHaveTextContent('2 / 3 件')
+  })
+
+  it('1枚だけのときは進捗もスキップも全てキャンセルも出さない', () => {
+    renderEditor({ total: 1 })
+    expect(screen.queryByTestId('queue-progress')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('skip-image-button')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('cancel-queue-button')).not.toBeInTheDocument()
+  })
+
+  it('スキップボタンでonSkipが呼ばれる', () => {
+    const props = renderEditor({ total: 2 })
+    fireEvent.click(screen.getByTestId('skip-image-button'))
+    expect(props.onSkip).toHaveBeenCalled()
+  })
+
+  it('全てキャンセルでonCancelAllが呼ばれる', () => {
+    const props = renderEditor({ total: 2 })
+    fireEvent.click(screen.getByTestId('cancel-queue-button'))
+    expect(props.onCancelAll).toHaveBeenCalled()
+  })
+
+  it('完了したら切り取りUIを閉じてサマリを出す', () => {
+    renderEditor({
+      image: null,
+      isFinished: true,
+      index: 3,
+      total: 3,
+      savedCount: 2,
+      skippedCount: 1,
+    })
+
+    expect(screen.queryByTestId('crop-area')).not.toBeInTheDocument()
+    expect(screen.getByTestId('queue-summary')).toHaveTextContent(
+      '3 件中 2 件を保存、1 件スキップ',
+    )
+  })
+
+  it('全てキャンセルしたあとは未処理の件数もサマリに出す', () => {
+    renderEditor({
+      image: null,
+      isFinished: true,
+      index: 3,
+      total: 3,
+      savedCount: 1,
+      skippedCount: 0,
+    })
+
+    expect(screen.getByTestId('queue-summary')).toHaveTextContent(
+      '3 件中 1 件を保存、0 件スキップ、2 件は未処理',
+    )
+  })
+
+  it('サマリから最初からやり直せる', () => {
+    const props = renderEditor({ image: null, isFinished: true, total: 2 })
+    fireEvent.click(screen.getByTestId('restart-queue-button'))
+    expect(props.onRestart).toHaveBeenCalled()
+  })
+
+  it('サマリから別の画像を選び直せる', () => {
+    const props = renderEditor({ image: null, isFinished: true, total: 2 })
+    fireEvent.click(screen.getByTestId('change-image-button'))
+    expect(props.onChangeImage).toHaveBeenCalled()
   })
 })

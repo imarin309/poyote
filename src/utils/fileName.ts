@@ -1,8 +1,9 @@
-const EXTENSIONS: Record<string, string> = {
-  'image/webp': 'webp',
-  'image/jpeg': 'jpg',
-  'image/png': 'png',
-}
+// オブジェクトだと 'toString' などプロトタイプ由来のキーを引いてしまうためMapを使う
+const EXTENSIONS = new Map([
+  ['image/webp', 'webp'],
+  ['image/jpeg', 'jpg'],
+  ['image/png', 'png'],
+])
 
 export function stripExtension(filename: string): string {
   const lastDotIndex = filename.lastIndexOf('.')
@@ -14,7 +15,7 @@ export function stripExtension(filename: string): string {
 }
 
 export function extensionForMimeType(mimeType: string): string {
-  return EXTENSIONS[mimeType] ?? 'bin'
+  return EXTENSIONS.get(mimeType) ?? 'bin'
 }
 
 // 動画側は一部のモバイルブラウザでwebpのダウンロードに失敗した実績があるため、jpg固定のまま

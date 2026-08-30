@@ -42,6 +42,11 @@ describe('extensionForMimeType', () => {
   it('未知の形式はbinを返す', () => {
     expect(extensionForMimeType('application/octet-stream')).toBe('bin')
   })
+
+  it('プロトタイプ由来のキー名でもbinを返す', () => {
+    expect(extensionForMimeType('toString')).toBe('bin')
+    expect(extensionForMimeType('constructor')).toBe('bin')
+  })
 })
 
 describe('buildImageFilename', () => {

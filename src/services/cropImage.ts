@@ -1,7 +1,5 @@
 import type { Size, SourceRect } from '../utils/cropRect'
-
-const JPEG_MIME = 'image/jpeg'
-const JPEG_QUALITY = 0.85
+import { encodeCanvasWithinSize } from './encodeImage'
 
 export async function cropImageToBlob(
   source: HTMLImageElement,
@@ -30,9 +28,8 @@ export async function cropImageToBlob(
     throw new Error('Canvasコンテキストを取得できませんでした。')
   }
 
-  // jpegは透過を持てないため、透過部分が黒く出ないよう白の下地を敷く
-  context.fillStyle = '#ffffff'
-  context.fillRect(0, 0, canvas.width, canvas.height)
+  // 白の下地はjpegにフォールバックしたときだけ敷く（encodeCanvasWithinSize側）。
+  // webpは透過を持てるのでここでは塗らない
   context.drawImage(
     source,
     sourceRect.left,
@@ -45,13 +42,5 @@ export async function cropImageToBlob(
     targetSize.height,
   )
 
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, JPEG_MIME, JPEG_QUALITY),
-  )
-
-  if (!blob) {
-    throw new Error('画像の生成に失敗しました。')
-  }
-
-  return blob
+  return encodeCanvasWithinSize(canvas)
 }

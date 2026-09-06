@@ -81,6 +81,47 @@ describe('useVideoDurations', () => {
     expect(maxRunning).toBe(1)
   })
 
+  it('計測中に読み込み直しても、前の1本が終わるまで次を測らない', async () => {
+    let running = 0
+    let maxRunning = 0
+    const finishers: Array<() => void> = []
+    measureMock.mockImplementation(() => {
+      running += 1
+      maxRunning = Math.max(maxRunning, running)
+      return new Promise((resolve) => {
+        finishers.push(() => {
+          running -= 1
+          resolve(1)
+        })
+      })
+    })
+
+    const { result, rerender } = renderHook(
+      ({ videos }: { videos: LoadedVideo[] }) => useVideoDurations(videos),
+      { initialProps: { videos: [loadedVideo('a.mp4')] } },
+    )
+
+    await waitFor(() => expect(measureMock).toHaveBeenCalledTimes(1))
+
+    rerender({ videos: [loadedVideo('c.mp4')] })
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(measureMock).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      finishers[0]()
+    })
+    await waitFor(() => expect(finishers).toHaveLength(2))
+
+    await act(async () => {
+      finishers[1]()
+    })
+    await waitFor(() => expect(result.current.isMeasuring).toBe(false))
+
+    expect(maxRunning).toBe(1)
+  })
+
   it('メタデータを読めなかった動画はerrorUrlsに入り、合計に加えない', async () => {
     measureMock
       .mockRejectedValueOnce(new Error('読めない'))

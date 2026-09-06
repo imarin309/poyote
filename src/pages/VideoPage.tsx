@@ -77,8 +77,8 @@ export function VideoPage({
     duration,
   )
 
-  // メタデータすら読めない動画は再生もできないので、選ぶ前に再生不可と分かる。
-  // 逆にメタデータが読めても再生できないコーデックはあるため、onError も残す
+  // 計測が済んだ動画は、メタデータを読めたかどうかで選ぶ前に再生可否が分かる。
+  // ただしメタデータが読めても再生できないコーデックはあるため、onError も残す
   const isVideoUnplayable = (candidate: LoadedVideo) =>
     isUnplayable(candidate) || errorUrls.has(candidate.objectUrl)
 

@@ -4,6 +4,7 @@ import { usePlaybackControls } from '../hooks/usePlaybackControls'
 import { useVideoCapture } from '../hooks/useVideoCapture'
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
 import { useThumbnailGeneration } from '../hooks/useThumbnailGeneration'
+import { useVideoDurations } from '../hooks/useVideoDurations'
 import { VideoDropZone } from '../components/VideoDropZone/VideoDropZone'
 import { VideoList } from '../components/VideoList/VideoList'
 import { VideoPlayer } from '../components/VideoPlayer/VideoPlayer'
@@ -12,7 +13,9 @@ import { CapturePreview } from '../components/CapturePreview/CapturePreview'
 import { ThumbnailGrid } from '../components/ThumbnailGrid/ThumbnailGrid'
 import { Header } from '../components/Header/Header'
 import { stripExtension } from '../utils/fileName'
+import { formatDuration } from '../utils/formatTime'
 import type { Route } from '../types/route'
+import type { LoadedVideo } from '../types/video'
 
 interface VideoPageProps {
   route: Route
@@ -38,6 +41,8 @@ export function VideoPage({
     reportPlaybackError,
     clear,
   } = useVideoFiles()
+  const { durations, errorUrls, totalDuration, measuredCount, isMeasuring } =
+    useVideoDurations(videos)
   const {
     videoRef,
     videoNode,
@@ -71,6 +76,16 @@ export function VideoPage({
     currentVideoUrl,
     duration,
   )
+
+  // 計測が済んだ動画は、メタデータを読めたかどうかで選ぶ前に再生可否が分かる。
+  // ただしメタデータが読めても再生できないコーデックはあるため、onError も残す
+  const isVideoUnplayable = (candidate: LoadedVideo) =>
+    isUnplayable(candidate) || errorUrls.has(candidate.objectUrl)
+
+  const unknownDurationCount = videos.filter(
+    ({ objectUrl }) =>
+      errorUrls.has(objectUrl) || durations.get(objectUrl) === null,
+  ).length
 
   useKeyboardShortcuts({
     enabled: video !== null && !isGenerating && !helpOpen,
@@ -106,10 +121,19 @@ export function VideoPage({
       <VideoList
         videos={videos}
         selectedIndex={index}
-        isUnplayable={isUnplayable}
+        durations={durations}
+        isUnplayable={isVideoUnplayable}
         onSelect={select}
         onReload={clear}
       />
+
+      <p className="shrink-0 border-b border-neutral-800 px-4 py-1 text-xs text-neutral-400">
+        {videos.length}本 / 合計 {formatDuration(totalDuration)}
+        {isMeasuring && `（計測中 ${measuredCount}/${videos.length}）`}
+        {!isMeasuring &&
+          unknownDurationCount > 0 &&
+          `（${unknownDurationCount}本は長さ不明）`}
+      </p>
 
       <div className="flex flex-1 flex-col overflow-y-auto md:flex-row md:overflow-hidden">
         <div className="order-2 flex flex-col items-center gap-6 p-6 md:order-none md:w-1/2 md:overflow-y-auto">

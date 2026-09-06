@@ -12,16 +12,27 @@ interface LastCapture {
 interface UseVideoCaptureOptions {
   videoNode: HTMLVideoElement | null
   baseFileName: string
+  videoKey: string | null
 }
 
 export function useVideoCapture({
   videoNode,
   baseFileName,
+  videoKey,
 }: UseVideoCaptureOptions) {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastCapture, setLastCapture] = useState<LastCapture | null>(null)
+  const [syncedVideoKey, setSyncedVideoKey] = useState(videoKey)
   const lastCaptureRef = useRef<LastCapture | null>(null)
+
+  // 別の動画へ切り替えたとき、前の動画のキャプチャ結果を残さない。
+  // Object URLの解放はrefを触るためレンダー本体では行えず、下のeffectに任せる
+  if (videoKey !== syncedVideoKey) {
+    setSyncedVideoKey(videoKey)
+    setLastCapture(null)
+    setError(null)
+  }
 
   useEffect(() => {
     lastCaptureRef.current = lastCapture
@@ -31,9 +42,10 @@ export function useVideoCapture({
     return () => {
       if (lastCaptureRef.current) {
         URL.revokeObjectURL(lastCaptureRef.current.objectUrl)
+        lastCaptureRef.current = null
       }
     }
-  }, [])
+  }, [videoKey])
 
   const capture = useCallback(async () => {
     if (!videoNode || isSaving) {

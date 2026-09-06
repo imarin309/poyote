@@ -82,7 +82,7 @@ describe('VideoList', () => {
     expect(item).toHaveTextContent('再生不可')
   })
 
-  it('1本だけのときは切り替えの項目を出さない', () => {
+  it('1本だけでも項目を出す', () => {
     render(
       <VideoList
         videos={[loadedVideo('a.mp4')]}
@@ -93,10 +93,10 @@ describe('VideoList', () => {
       />,
     )
 
-    expect(screen.queryByRole('button', { name: 'a.mp4' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'a.mp4' })).toBeInTheDocument()
   })
 
-  it('1本だけでも読み込み直せる', () => {
+  it('読み込み直せる', () => {
     const onReload = vi.fn()
     render(
       <VideoList

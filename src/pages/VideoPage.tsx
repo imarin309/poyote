@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useVideoFile } from '../hooks/useVideoFile'
+import { useVideoFiles } from '../hooks/useVideoFiles'
 import { usePlaybackControls } from '../hooks/usePlaybackControls'
 import { useVideoCapture } from '../hooks/useVideoCapture'
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
@@ -27,12 +27,12 @@ export function VideoPage({
   helpOpen,
 }: VideoPageProps) {
   const {
-    video,
+    current: video,
     error: videoError,
-    loadFile,
+    load,
     reportPlaybackError,
     clear,
-  } = useVideoFile()
+  } = useVideoFiles()
   const {
     videoRef,
     videoNode,
@@ -88,7 +88,7 @@ export function VideoPage({
       <div className="flex min-h-screen flex-col items-center gap-8 bg-neutral-950 px-4 py-10 text-neutral-100">
         {header}
         <div className="flex flex-1 items-center justify-center">
-          <VideoDropZone onFileSelected={loadFile} error={videoError} />
+          <VideoDropZone onFilesSelected={load} error={videoError} />
         </div>
       </div>
     )
@@ -115,6 +115,11 @@ export function VideoPage({
             onError={reportPlaybackError}
             onChangeVideo={clear}
           />
+          {videoError && (
+            <p role="alert" className="w-full max-w-3xl text-sm text-red-400">
+              {videoError}
+            </p>
+          )}
           <PlaybackControls
             currentTime={currentTime}
             duration={duration}

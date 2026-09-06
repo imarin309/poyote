@@ -2,20 +2,20 @@ import { useRef, useState } from 'react'
 import type { DragEvent, ChangeEvent } from 'react'
 
 interface VideoDropZoneProps {
-  onFileSelected: (file: File) => void
+  onFilesSelected: (files: File[]) => void
   error: string | null
 }
 
-export function VideoDropZone({ onFileSelected, error }: VideoDropZoneProps) {
+export function VideoDropZone({ onFilesSelected, error }: VideoDropZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault()
     setIsDragOver(false)
-    const file = event.dataTransfer.files[0]
-    if (file) {
-      onFileSelected(file)
+    const files = Array.from(event.dataTransfer.files)
+    if (files.length > 0) {
+      onFilesSelected(files)
     }
   }
 
@@ -30,9 +30,9 @@ export function VideoDropZone({ onFileSelected, error }: VideoDropZoneProps) {
   }
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      onFileSelected(file)
+    const files = Array.from(event.target.files ?? [])
+    if (files.length > 0) {
+      onFilesSelected(files)
     }
     event.target.value = ''
   }
@@ -51,7 +51,7 @@ export function VideoDropZone({ onFileSelected, error }: VideoDropZoneProps) {
         }`}
       >
         <p className="text-neutral-300">
-          動画ファイルをここへドラッグ＆ドロップ
+          動画ファイルをここへドラッグ＆ドロップ（複数可）
         </p>
         <p className="text-neutral-500">または</p>
         <button
@@ -66,6 +66,7 @@ export function VideoDropZone({ onFileSelected, error }: VideoDropZoneProps) {
           data-testid="video-file-input"
           type="file"
           accept="video/*"
+          multiple
           className="hidden"
           onChange={handleInputChange}
         />

@@ -65,6 +65,14 @@ export function useThumbnailGeneration(
       return
     }
 
+    // 別の動画へ切り替えた直後は、引数の duration に前の動画の値が残ったまま
+    // このeffectが走る。尺は要素から読み直し、この動画のメタデータがまだ
+    // 読めていなければ、duration が更新されたあとの実行に任せる
+    const videoDuration = node.duration
+    if (!Number.isFinite(videoDuration) || videoDuration <= 0) {
+      return
+    }
+
     if (generatedForKeyRef.current === videoKey) {
       return
     }
@@ -76,8 +84,12 @@ export function useThumbnailGeneration(
       const maxCount = isMobileDevice()
         ? MAX_THUMBNAIL_COUNT_MOBILE
         : MAX_THUMBNAIL_COUNT
-      const interval = resolveThumbnailInterval(duration, undefined, maxCount)
-      const times = buildThumbnailTimes(duration, interval)
+      const interval = resolveThumbnailInterval(
+        videoDuration,
+        undefined,
+        maxCount,
+      )
+      const times = buildThumbnailTimes(videoDuration, interval)
       const results: Thumbnail[] = []
 
       setIsGenerating(true)
@@ -140,6 +152,8 @@ export function useThumbnailGeneration(
 
     return () => {
       cancelled = true
+      // 中断した生成を完了扱いにすると、この動画のサムネイルが二度と作られない
+      generatedForKeyRef.current = null
     }
   }, [videoNodeRef, videoKey, duration])
 

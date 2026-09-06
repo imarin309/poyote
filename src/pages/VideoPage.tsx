@@ -5,6 +5,7 @@ import { useVideoCapture } from '../hooks/useVideoCapture'
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
 import { useThumbnailGeneration } from '../hooks/useThumbnailGeneration'
 import { VideoDropZone } from '../components/VideoDropZone/VideoDropZone'
+import { VideoList } from '../components/VideoList/VideoList'
 import { VideoPlayer } from '../components/VideoPlayer/VideoPlayer'
 import { PlaybackControls } from '../components/PlaybackControls/PlaybackControls'
 import { CapturePreview } from '../components/CapturePreview/CapturePreview'
@@ -27,9 +28,13 @@ export function VideoPage({
   helpOpen,
 }: VideoPageProps) {
   const {
+    videos,
     current: video,
+    index,
+    isUnplayable,
     error: videoError,
     load,
+    select,
     reportPlaybackError,
     clear,
   } = useVideoFiles()
@@ -59,7 +64,7 @@ export function VideoPage({
     isSaving,
     error: captureError,
     lastCapture,
-  } = useVideoCapture({ videoNode, baseFileName })
+  } = useVideoCapture({ videoNode, baseFileName, videoKey: currentVideoUrl })
 
   const { thumbnails, isGenerating, progress } = useThumbnailGeneration(
     videoNodeRef,
@@ -98,6 +103,14 @@ export function VideoPage({
     <div className="flex h-screen flex-col bg-neutral-950 text-neutral-100">
       {header}
 
+      <VideoList
+        videos={videos}
+        selectedIndex={index}
+        isUnplayable={isUnplayable}
+        onSelect={select}
+        onReload={clear}
+      />
+
       <div className="flex flex-1 flex-col overflow-y-auto md:flex-row md:overflow-hidden">
         <div className="order-2 flex flex-col items-center gap-6 p-6 md:order-none md:w-1/2 md:overflow-y-auto">
           <ThumbnailGrid
@@ -113,7 +126,6 @@ export function VideoPage({
             video={video}
             videoRef={videoRef}
             onError={reportPlaybackError}
-            onChangeVideo={clear}
           />
           {videoError && (
             <p role="alert" className="w-full max-w-3xl text-sm text-red-400">

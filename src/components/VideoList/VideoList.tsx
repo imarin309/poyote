@@ -1,16 +1,21 @@
 import type { LoadedVideo } from '../../types/video'
+import { formatDuration } from '../../utils/formatTime'
 
 interface VideoListProps {
   videos: LoadedVideo[]
   selectedIndex: number
+  durations: Map<string, number | null>
   isUnplayable: (video: LoadedVideo) => boolean
   onSelect: (index: number) => void
   onReload: () => void
 }
 
+const UNKNOWN_DURATION = '--:--'
+
 export function VideoList({
   videos,
   selectedIndex,
+  durations,
   isUnplayable,
   onSelect,
   onReload,
@@ -25,6 +30,10 @@ export function VideoList({
         {videos.map((video, index) => {
           const unplayable = isUnplayable(video)
           const selected = index === selectedIndex
+          const seconds = durations.get(video.objectUrl)
+          // 計測前と長さ不明を同じ表示にまとめる。どちらもこの動画からは長さを出せない
+          const duration =
+            seconds == null ? UNKNOWN_DURATION : formatDuration(seconds)
 
           return (
             <li key={video.objectUrl} className="shrink-0">
@@ -41,6 +50,9 @@ export function VideoList({
                 }`}
               >
                 <span className="truncate">{video.file.name}</span>
+                <span className="shrink-0 text-xs text-neutral-400">
+                  {duration}
+                </span>
                 {unplayable && (
                   <span className="shrink-0 text-xs text-red-400">
                     再生不可

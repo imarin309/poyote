@@ -11,6 +11,7 @@ function loadedVideo(name: string): LoadedVideo {
 }
 
 const neverUnplayable = () => false
+const noDurations = new Map<string, number | null>()
 
 describe('VideoList', () => {
   it('読み込んだ動画をすべて並べる', () => {
@@ -18,14 +19,15 @@ describe('VideoList', () => {
       <VideoList
         videos={[loadedVideo('a.mp4'), loadedVideo('b.mp4')]}
         selectedIndex={0}
+        durations={noDurations}
         isUnplayable={neverUnplayable}
         onSelect={vi.fn()}
         onReload={vi.fn()}
       />,
     )
 
-    expect(screen.getByRole('button', { name: 'a.mp4' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'b.mp4' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /a\.mp4/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /b\.mp4/ })).toBeInTheDocument()
   })
 
   it('選択中の項目にaria-currentを付ける', () => {
@@ -33,17 +35,18 @@ describe('VideoList', () => {
       <VideoList
         videos={[loadedVideo('a.mp4'), loadedVideo('b.mp4')]}
         selectedIndex={1}
+        durations={noDurations}
         isUnplayable={neverUnplayable}
         onSelect={vi.fn()}
         onReload={vi.fn()}
       />,
     )
 
-    expect(screen.getByRole('button', { name: 'b.mp4' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /b\.mp4/ })).toHaveAttribute(
       'aria-current',
       'true',
     )
-    expect(screen.getByRole('button', { name: 'a.mp4' })).not.toHaveAttribute(
+    expect(screen.getByRole('button', { name: /a\.mp4/ })).not.toHaveAttribute(
       'aria-current',
     )
   })
@@ -54,13 +57,14 @@ describe('VideoList', () => {
       <VideoList
         videos={[loadedVideo('a.mp4'), loadedVideo('b.mp4')]}
         selectedIndex={0}
+        durations={noDurations}
         isUnplayable={neverUnplayable}
         onSelect={onSelect}
         onReload={vi.fn()}
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: 'b.mp4' }))
+    fireEvent.click(screen.getByRole('button', { name: /b\.mp4/ }))
 
     expect(onSelect).toHaveBeenCalledWith(1)
   })
@@ -71,6 +75,7 @@ describe('VideoList', () => {
       <VideoList
         videos={videos}
         selectedIndex={0}
+        durations={noDurations}
         isUnplayable={(video) => video.file.name === 'broken.mp4'}
         onSelect={vi.fn()}
         onReload={vi.fn()}
@@ -87,13 +92,51 @@ describe('VideoList', () => {
       <VideoList
         videos={[loadedVideo('a.mp4')]}
         selectedIndex={0}
+        durations={noDurations}
         isUnplayable={neverUnplayable}
         onSelect={vi.fn()}
         onReload={vi.fn()}
       />,
     )
 
-    expect(screen.getByRole('button', { name: 'a.mp4' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /a\.mp4/ })).toBeInTheDocument()
+  })
+
+  it('計測できた長さを項目に表示する', () => {
+    render(
+      <VideoList
+        videos={[loadedVideo('a.mp4')]}
+        selectedIndex={0}
+        durations={new Map([['blob:a.mp4', 754]])}
+        isUnplayable={neverUnplayable}
+        onSelect={vi.fn()}
+        onReload={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: /a\.mp4/ })).toHaveTextContent(
+      '12:34',
+    )
+  })
+
+  it('計測前と長さ不明はどちらも --:-- と表示する', () => {
+    render(
+      <VideoList
+        videos={[loadedVideo('a.mp4'), loadedVideo('b.mp4')]}
+        selectedIndex={0}
+        durations={new Map([['blob:b.mp4', null]])}
+        isUnplayable={neverUnplayable}
+        onSelect={vi.fn()}
+        onReload={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: /a\.mp4/ })).toHaveTextContent(
+      '--:--',
+    )
+    expect(screen.getByRole('button', { name: /b\.mp4/ })).toHaveTextContent(
+      '--:--',
+    )
   })
 
   it('読み込み直せる', () => {
@@ -102,6 +145,7 @@ describe('VideoList', () => {
       <VideoList
         videos={[loadedVideo('a.mp4')]}
         selectedIndex={0}
+        durations={noDurations}
         isUnplayable={neverUnplayable}
         onSelect={vi.fn()}
         onReload={onReload}

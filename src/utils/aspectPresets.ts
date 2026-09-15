@@ -19,13 +19,31 @@ export function presetRatio(preset: AspectPreset, sourceSize: Size): number {
   return preset.width / preset.height
 }
 
-// 「そのまま」は拡縮すると元画像の画素を捨てるか水増しするだけなので、切り取った画素数で書き出す
+// 元画像の画素数のまま書き出すと、写真では容量上限に収めるための再エンコードが極端に重くなる。
+// 比率を変えない出力も固定サイズのプリセットと同じ大きさに揃え、小さい画像も同じく拡大する
+export const OUTPUT_LONG_SIDE = 1200
+
+export function fitLongSide(
+  size: Size,
+  longSide: number = OUTPUT_LONG_SIDE,
+): Size {
+  if (size.width <= 0 || size.height <= 0) {
+    return { width: 0, height: 0 }
+  }
+
+  const scale = longSide / Math.max(size.width, size.height)
+  return {
+    width: Math.round(size.width * scale),
+    height: Math.round(size.height * scale),
+  }
+}
+
 export function presetOutputSize(
   preset: AspectPreset,
   sourceRect: SourceRect,
 ): Size {
-  if (preset.kind === 'original') {
-    return { width: sourceRect.width, height: sourceRect.height }
+  if (preset.kind === 'fixed') {
+    return { width: preset.width, height: preset.height }
   }
-  return { width: preset.width, height: preset.height }
+  return fitLongSide(sourceRect)
 }

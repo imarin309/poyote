@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import type { KeyboardEvent, PointerEvent } from 'react'
-import { ASPECT_PRESETS } from '../../utils/aspectPresets'
+import { ASPECT_PRESETS, OUTPUT_LONG_SIDE } from '../../utils/aspectPresets'
 import { MAX_OUTPUT_BYTES } from '../../utils/imageQuality'
 import type { CropRect, ResizeHandle } from '../../utils/cropRect'
 import type { LoadedImage } from '../../types/image'
@@ -174,7 +174,7 @@ export function ImageEditor({
             ドラッグで移動 /
             四隅でリサイズ（ハンドルは矢印キーでも動かせます）・ 出力:{' '}
             {preset.kind === 'original'
-              ? '切り取った範囲のピクセル数のまま'
+              ? `元画像の比率で長辺${OUTPUT_LONG_SIDE}px`
               : `${preset.width}×${preset.height}px`}
           </p>
 
@@ -313,7 +313,8 @@ export function ImageEditor({
         </h2>
         <p className="mt-1 text-xs text-neutral-400">
           切り取らずに、読み込んだ {total} 件すべてを {MAX_OUTPUT_KILOBYTES}KB
-          以下に変換します。縦横比もピクセル数も変わりません。
+          以下に変換します。縦横比は変えずに、長辺を{OUTPUT_LONG_SIDE}
+          pxに揃えます。
           ブラウザに複数のダウンロードを止められるため、結果はZIP1つにまとめて保存します。
         </p>
 

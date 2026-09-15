@@ -70,7 +70,7 @@ describe('ImageEditor', () => {
     ).toBeInTheDocument()
   })
 
-  it('「そのまま」を選ぶとボタンが並びの末尾にあり、出力は切り取った範囲のピクセル数と表示する', () => {
+  it('「そのまま」を選ぶとボタンが並びの末尾にあり、出力は元画像の比率で長辺1200pxと表示する', () => {
     const originalIndex = ASPECT_PRESETS.findIndex(
       (preset) => preset.kind === 'original',
     )
@@ -78,9 +78,7 @@ describe('ImageEditor', () => {
 
     renderEditor({ presetIndex: originalIndex })
     expect(screen.getByRole('button', { name: 'そのまま' })).toBeInTheDocument()
-    expect(
-      screen.getByText(/切り取った範囲のピクセル数のまま/),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/元画像の比率で長辺1200px/)).toBeInTheDocument()
   })
 
   it('プリセットボタンでonSelectPresetが呼ばれる', () => {

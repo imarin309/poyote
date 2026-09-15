@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { presetOutputSize, presetRatio } from './aspectPresets'
+import { fitLongSide, presetOutputSize, presetRatio } from './aspectPresets'
 import type { AspectPreset } from './aspectPresets'
 
 const fixed: AspectPreset = {
@@ -31,10 +31,40 @@ describe('presetOutputSize', () => {
     })
   })
 
-  it('「そのまま」は切り取った範囲の画素数で書き出す', () => {
+  it('「そのまま」は切り取った範囲の比率のまま長辺を1200pxに縮める', () => {
     expect(presetOutputSize(original, sourceRect)).toEqual({
-      width: 1500,
-      height: 2000,
+      width: 900,
+      height: 1200,
+    })
+  })
+})
+
+describe('fitLongSide', () => {
+  it('横長の画像は幅を1200pxにして比率を保つ', () => {
+    expect(fitLongSide({ width: 4000, height: 3000 })).toEqual({
+      width: 1200,
+      height: 900,
+    })
+  })
+
+  it('長辺が1200pxに満たない画像は拡大する', () => {
+    expect(fitLongSide({ width: 600, height: 400 })).toEqual({
+      width: 1200,
+      height: 800,
+    })
+  })
+
+  it('端数は四捨五入する', () => {
+    expect(fitLongSide({ width: 3000, height: 1001 })).toEqual({
+      width: 1200,
+      height: 400,
+    })
+  })
+
+  it('サイズが0なら0を返す', () => {
+    expect(fitLongSide({ width: 0, height: 400 })).toEqual({
+      width: 0,
+      height: 0,
     })
   })
 })

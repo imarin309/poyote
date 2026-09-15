@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { presetOutputSize, presetRatio } from './aspectPresets'
+import { fitLongSide, presetOutputSize, presetRatio } from './aspectPresets'
 import type { AspectPreset } from './aspectPresets'
 
 const fixed: AspectPreset = {
@@ -37,16 +37,34 @@ describe('presetOutputSize', () => {
       height: 1200,
     })
   })
+})
 
-  it('「そのまま」は長辺が1200pxに満たない切り取りを拡大する', () => {
-    expect(
-      presetOutputSize(original, { left: 0, top: 0, width: 600, height: 400 }),
-    ).toEqual({ width: 1200, height: 800 })
+describe('fitLongSide', () => {
+  it('横長の画像は幅を1200pxにして比率を保つ', () => {
+    expect(fitLongSide({ width: 4000, height: 3000 })).toEqual({
+      width: 1200,
+      height: 900,
+    })
   })
 
-  it('「そのまま」は範囲が空なら0を返す', () => {
-    expect(
-      presetOutputSize(original, { left: 0, top: 0, width: 0, height: 400 }),
-    ).toEqual({ width: 0, height: 0 })
+  it('長辺が1200pxに満たない画像は拡大する', () => {
+    expect(fitLongSide({ width: 600, height: 400 })).toEqual({
+      width: 1200,
+      height: 800,
+    })
+  })
+
+  it('端数は四捨五入する', () => {
+    expect(fitLongSide({ width: 3000, height: 1001 })).toEqual({
+      width: 1200,
+      height: 400,
+    })
+  })
+
+  it('サイズが0なら0を返す', () => {
+    expect(fitLongSide({ width: 0, height: 400 })).toEqual({
+      width: 0,
+      height: 0,
+    })
   })
 })

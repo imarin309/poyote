@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import type { KeyboardEvent, PointerEvent } from 'react'
-import { ASPECT_PRESETS } from '../../utils/aspectPresets'
+import { ASPECT_PRESETS, ORIGINAL_LONG_SIDE } from '../../utils/aspectPresets'
 import { MAX_OUTPUT_BYTES } from '../../utils/imageQuality'
 import type { CropRect, ResizeHandle } from '../../utils/cropRect'
 import type { LoadedImage } from '../../types/image'
@@ -174,7 +174,7 @@ export function ImageEditor({
             ドラッグで移動 /
             四隅でリサイズ（ハンドルは矢印キーでも動かせます）・ 出力:{' '}
             {preset.kind === 'original'
-              ? '切り取った範囲のピクセル数のまま'
+              ? `元画像の比率で長辺${ORIGINAL_LONG_SIDE}px`
               : `${preset.width}×${preset.height}px`}
           </p>
 

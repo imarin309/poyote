@@ -31,10 +31,22 @@ describe('presetOutputSize', () => {
     })
   })
 
-  it('「そのまま」は切り取った範囲の画素数で書き出す', () => {
+  it('「そのまま」は切り取った範囲の比率のまま長辺を1200pxに縮める', () => {
     expect(presetOutputSize(original, sourceRect)).toEqual({
-      width: 1500,
-      height: 2000,
+      width: 900,
+      height: 1200,
     })
+  })
+
+  it('「そのまま」は長辺が1200pxに満たない切り取りを拡大する', () => {
+    expect(
+      presetOutputSize(original, { left: 0, top: 0, width: 600, height: 400 }),
+    ).toEqual({ width: 1200, height: 800 })
+  })
+
+  it('「そのまま」は範囲が空なら0を返す', () => {
+    expect(
+      presetOutputSize(original, { left: 0, top: 0, width: 0, height: 400 }),
+    ).toEqual({ width: 0, height: 0 })
   })
 })

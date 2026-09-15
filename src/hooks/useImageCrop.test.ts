@@ -149,7 +149,7 @@ describe('useImageCrop', () => {
     })
   })
 
-  it('「そのまま」は画像全体を選び、切り取った範囲のピクセル数で書き出す', async () => {
+  it('「そのまま」は画像全体を選び、元画像の比率のまま長辺1200pxで書き出す', async () => {
     const { result } = setup()
 
     act(() => {
@@ -157,7 +157,7 @@ describe('useImageCrop', () => {
     })
     act(() => {
       result.current.measure(
-        fakeImage({ width: 400, height: 600 }, { width: 1200, height: 1800 }),
+        fakeImage({ width: 400, height: 600 }, { width: 3000, height: 4500 }),
       )
     })
 
@@ -168,8 +168,8 @@ describe('useImageCrop', () => {
     })
 
     const [, sourceRect, targetSize] = vi.mocked(cropImageToBlob).mock.calls[0]
-    expect(sourceRect).toEqual({ left: 0, top: 0, width: 1200, height: 1800 })
-    expect(targetSize).toEqual({ width: 1200, height: 1800 })
+    expect(sourceRect).toEqual({ left: 0, top: 0, width: 3000, height: 4500 })
+    expect(targetSize).toEqual({ width: 800, height: 1200 })
   })
 
   it('「そのまま」でリサイズしても元画像の比率を保つ', () => {

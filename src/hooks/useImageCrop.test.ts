@@ -11,9 +11,15 @@ vi.mock('../services/cropImage', () => ({
 }))
 
 // jsdom はレイアウトしないので、表示サイズと実サイズを持つ <img> を用意する
+const NATURAL = { width: 1600, height: 900 }
+
+const ORIGINAL_INDEX = ASPECT_PRESETS.findIndex(
+  (preset) => preset.kind === 'original',
+)
+
 function fakeImage(
   display = { width: 800, height: 450 },
-  natural = { width: 1600, height: 900 },
+  natural = NATURAL,
 ): HTMLImageElement {
   const image = document.createElement('img')
   const define = (name: string, value: number) =>
@@ -55,7 +61,7 @@ describe('useImageCrop', () => {
     const crop = result.current.crop
     expect(crop).not.toBeNull()
     expect(crop!.width / crop!.height).toBeCloseTo(
-      presetRatio(ASPECT_PRESETS[0]),
+      presetRatio(ASPECT_PRESETS[0], NATURAL),
     )
   })
 
@@ -82,7 +88,7 @@ describe('useImageCrop', () => {
     expect(result.current.presetIndex).toBe(2)
     const crop = result.current.crop
     expect(crop!.width / crop!.height).toBeCloseTo(
-      presetRatio(ASPECT_PRESETS[2]),
+      presetRatio(ASPECT_PRESETS[2], NATURAL),
     )
   })
 
@@ -126,6 +132,9 @@ describe('useImageCrop', () => {
     })
 
     const preset = ASPECT_PRESETS[0]
+    if (preset.kind !== 'fixed') {
+      throw new Error('固定サイズのプリセットを前提にしている')
+    }
     const [, sourceRect, targetSize] = vi.mocked(cropImageToBlob).mock.calls[0]
     // 表示800x450に対し元画像は1600x900なので、切り取り範囲は2倍になる
     expect(sourceRect).toEqual({
@@ -138,6 +147,52 @@ describe('useImageCrop', () => {
       width: preset.width,
       height: preset.height,
     })
+  })
+
+  it('「そのまま」は画像全体を選び、切り取った範囲のピクセル数で書き出す', async () => {
+    const { result } = setup()
+
+    act(() => {
+      result.current.selectPreset(ORIGINAL_INDEX)
+    })
+    act(() => {
+      result.current.measure(
+        fakeImage({ width: 400, height: 600 }, { width: 1200, height: 1800 }),
+      )
+    })
+
+    expect(result.current.crop).toEqual({ x: 0, y: 0, width: 400, height: 600 })
+
+    await act(async () => {
+      await result.current.confirm()
+    })
+
+    const [, sourceRect, targetSize] = vi.mocked(cropImageToBlob).mock.calls[0]
+    expect(sourceRect).toEqual({ left: 0, top: 0, width: 1200, height: 1800 })
+    expect(targetSize).toEqual({ width: 1200, height: 1800 })
+  })
+
+  it('「そのまま」でリサイズしても元画像の比率を保つ', () => {
+    const { result } = setup()
+    const natural = { width: 1200, height: 1800 }
+
+    act(() => {
+      result.current.selectPreset(ORIGINAL_INDEX)
+    })
+    act(() => {
+      result.current.measure(fakeImage({ width: 400, height: 600 }, natural))
+    })
+    act(() => {
+      result.current.resizeByKey('se', {
+        key: 'ArrowLeft',
+        shiftKey: true,
+        preventDefault: vi.fn(),
+      } as unknown as React.KeyboardEvent<HTMLElement>)
+    })
+
+    const crop = result.current.crop!
+    expect(crop.width).toBeLessThan(400)
+    expect(crop.width / crop.height).toBeCloseTo(natural.width / natural.height)
   })
 
   it('矢印キーで切り取り範囲をリサイズできる', () => {
@@ -159,7 +214,7 @@ describe('useImageCrop', () => {
     expect(result.current.crop!.width).toBeLessThan(before)
     expect(
       result.current.crop!.width / result.current.crop!.height,
-    ).toBeCloseTo(presetRatio(ASPECT_PRESETS[0]))
+    ).toBeCloseTo(presetRatio(ASPECT_PRESETS[0], NATURAL))
   })
 
   it('対応しないキーでは何も起きない', () => {

@@ -1,6 +1,10 @@
 import { useCallback, useRef, useState } from 'react'
 import { cropImageToBlob } from '../services/cropImage'
-import { ASPECT_PRESETS, presetRatio } from '../utils/aspectPresets'
+import {
+  ASPECT_PRESETS,
+  presetOutputSize,
+  presetRatio,
+} from '../utils/aspectPresets'
 import {
   createInitialCrop,
   moveCrop,
@@ -23,6 +27,7 @@ interface DragState {
 
 interface Geometry {
   display: Size
+  source: Size
   crop: CropRect
 }
 
@@ -56,18 +61,27 @@ export function useImageCrop({ save }: UseImageCropOptions) {
     (image: HTMLImageElement) => {
       previewImageRef.current = image
       const display = { width: image.clientWidth, height: image.clientHeight }
-      if (display.width <= 0 || display.height <= 0) {
+      // ブラウザはEXIF回転を適用済みの naturalWidth/Height を返すため、表示と比率が一致する
+      const source = {
+        width: image.naturalWidth,
+        height: image.naturalHeight,
+      }
+      if (
+        display.width <= 0 ||
+        display.height <= 0 ||
+        source.width <= 0 ||
+        source.height <= 0
+      ) {
         return
       }
+      const ratio = presetRatio(ASPECT_PRESETS[presetIndex], source)
 
       setGeometry((previous) => {
         if (!previous) {
           return {
             display,
-            crop: createInitialCrop(
-              display,
-              presetRatio(ASPECT_PRESETS[presetIndex]),
-            ),
+            source,
+            crop: createInitialCrop(display, ratio),
           }
         }
 
@@ -81,12 +95,8 @@ export function useImageCrop({ save }: UseImageCropOptions) {
         // 画面回転やリサイズでは選択範囲を作り直さず、同じ比率で拡縮する
         return {
           display,
-          crop: rescaleCrop(
-            previous.crop,
-            previous.display,
-            display,
-            presetRatio(ASPECT_PRESETS[presetIndex]),
-          ),
+          source,
+          crop: rescaleCrop(previous.crop, previous.display, display, ratio),
         }
       })
     },
@@ -103,7 +113,7 @@ export function useImageCrop({ save }: UseImageCropOptions) {
         ...previous,
         crop: createInitialCrop(
           previous.display,
-          presetRatio(ASPECT_PRESETS[index]),
+          presetRatio(ASPECT_PRESETS[index], previous.source),
         ),
       }
     })
@@ -152,7 +162,7 @@ export function useImageCrop({ save }: UseImageCropOptions) {
                 drag.mode,
                 deltaX,
                 deltaY,
-                presetRatio(ASPECT_PRESETS[presetIndex]),
+                presetRatio(ASPECT_PRESETS[presetIndex], previous.source),
                 previous.display,
               )
 
@@ -185,7 +195,7 @@ export function useImageCrop({ save }: UseImageCropOptions) {
             handle,
             direction[0] * amount,
             direction[1] * amount,
-            presetRatio(ASPECT_PRESETS[presetIndex]),
+            presetRatio(ASPECT_PRESETS[presetIndex], previous.source),
             previous.display,
           ),
         }
@@ -210,21 +220,15 @@ export function useImageCrop({ save }: UseImageCropOptions) {
     }
 
     // 切り取り元はプレビュー用の <img> 自身。別途デコードし直さないので二重エンコードにならない。
-    // ブラウザは naturalWidth/Height にも drawImage にもEXIF回転を適用済みで返すため、
-    // 表示と出力は自動で一致する
-    const sourceSize = {
-      width: previewImage.naturalWidth,
-      height: previewImage.naturalHeight,
-    }
-    const preset = ASPECT_PRESETS[presetIndex]
-    const sourceRect = toSourceRect(geometry.crop, geometry.display, sourceSize)
-
-    return save(() =>
-      cropImageToBlob(previewImage, sourceRect, {
-        width: preset.width,
-        height: preset.height,
-      }),
+    // drawImage もEXIF回転を適用済みで描くため、表示と出力は自動で一致する
+    const sourceRect = toSourceRect(
+      geometry.crop,
+      geometry.display,
+      geometry.source,
     )
+    const outputSize = presetOutputSize(ASPECT_PRESETS[presetIndex], sourceRect)
+
+    return save(() => cropImageToBlob(previewImage, sourceRect, outputSize))
   }, [geometry, presetIndex, save])
 
   return {

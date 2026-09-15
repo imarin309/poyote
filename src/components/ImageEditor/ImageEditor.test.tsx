@@ -62,8 +62,24 @@ describe('ImageEditor', () => {
   it('選択中プリセットの出力サイズを表示する', () => {
     renderEditor({ presetIndex: 1 })
     const preset = ASPECT_PRESETS[1]
+    if (preset.kind !== 'fixed') {
+      throw new Error('固定サイズのプリセットを前提にしている')
+    }
     expect(
       screen.getByText(new RegExp(`${preset.width}×${preset.height}px`)),
+    ).toBeInTheDocument()
+  })
+
+  it('「そのまま」を選ぶとボタンが並びの末尾にあり、出力は切り取った範囲のピクセル数と表示する', () => {
+    const originalIndex = ASPECT_PRESETS.findIndex(
+      (preset) => preset.kind === 'original',
+    )
+    expect(originalIndex).toBe(ASPECT_PRESETS.length - 1)
+
+    renderEditor({ presetIndex: originalIndex })
+    expect(screen.getByRole('button', { name: 'そのまま' })).toBeInTheDocument()
+    expect(
+      screen.getByText(/切り取った範囲のピクセル数のまま/),
     ).toBeInTheDocument()
   })
 

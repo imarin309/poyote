@@ -173,7 +173,9 @@ export function ImageEditor({
           <p className="text-center text-xs text-neutral-400">
             ドラッグで移動 /
             四隅でリサイズ（ハンドルは矢印キーでも動かせます）・ 出力:{' '}
-            {preset.width}×{preset.height}px
+            {preset.kind === 'original'
+              ? '切り取った範囲のピクセル数のまま'
+              : `${preset.width}×${preset.height}px`}
           </p>
 
           <div

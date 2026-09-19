@@ -26,7 +26,9 @@ export function useVideoFiles() {
 
   const load = useCallback(
     (files: File[]) => {
-      const videoFiles = files.filter(isVideoFile)
+      const videoFiles = files
+        .filter(isVideoFile)
+        .sort((a, b) => a.lastModified - b.lastModified)
 
       if (videoFiles.length === 0) {
         setLoadError('動画ファイルを選択してください。')

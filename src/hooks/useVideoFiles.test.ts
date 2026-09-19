@@ -2,8 +2,9 @@ import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useVideoFiles } from './useVideoFiles'
 
-function videoFile(name: string) {
-  return new File([''], name, { type: 'video/mp4' })
+// 既定値を固定しないと作成時刻のミリ秒差で並びが変わり、順番を見るテストがぶれる
+function videoFile(name: string, lastModified = 0) {
+  return new File([''], name, { type: 'video/mp4', lastModified })
 }
 
 describe('useVideoFiles', () => {
@@ -35,6 +36,39 @@ describe('useVideoFiles', () => {
     expect(result.current.index).toBe(0)
     expect(result.current.current?.file).toBe(files[0])
     expect(result.current.error).toBeNull()
+  })
+
+  it('更新日時の古い順に並ぶ', () => {
+    const { result } = renderHook(() => useVideoFiles())
+    const newer = videoFile('newer.mp4', 2000)
+    const oldest = videoFile('oldest.mp4', 1000)
+    const newest = videoFile('newest.mp4', 3000)
+
+    act(() => {
+      result.current.load([newer, oldest, newest])
+    })
+
+    expect(result.current.videos.map((video) => video.file)).toEqual([
+      oldest,
+      newer,
+      newest,
+    ])
+    expect(result.current.current?.file).toBe(oldest)
+  })
+
+  it('更新日時が同じ動画は渡された順のまま並ぶ', () => {
+    const { result } = renderHook(() => useVideoFiles())
+    const files = [
+      videoFile('b.mp4', 1000),
+      videoFile('a.mp4', 1000),
+      videoFile('c.mp4', 1000),
+    ]
+
+    act(() => {
+      result.current.load(files)
+    })
+
+    expect(result.current.videos.map((video) => video.file)).toEqual(files)
   })
 
   it('動画でないファイルは除外され、除外した件数を警告する', () => {

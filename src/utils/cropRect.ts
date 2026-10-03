@@ -21,9 +21,20 @@ export type ResizeHandle = 'nw' | 'ne' | 'sw' | 'se'
 
 export const MIN_CROP_SIZE = 40
 
-export function createInitialCrop(bounds: Size, ratio: number): CropRect {
-  if (bounds.width <= 0 || bounds.height <= 0 || ratio <= 0) {
+export function createInitialCrop(
+  bounds: Size,
+  ratio: number | null,
+): CropRect {
+  if (
+    bounds.width <= 0 ||
+    bounds.height <= 0 ||
+    (ratio !== null && ratio <= 0)
+  ) {
     return { x: 0, y: 0, width: 0, height: 0 }
+  }
+
+  if (ratio === null) {
+    return { x: 0, y: 0, width: bounds.width, height: bounds.height }
   }
 
   let width = bounds.width
@@ -59,9 +70,13 @@ export function resizeCrop(
   handle: ResizeHandle,
   deltaX: number,
   deltaY: number,
-  ratio: number,
+  ratio: number | null,
   bounds: Size,
 ): CropRect {
+  if (ratio === null) {
+    return resizeCropFreely(start, handle, deltaX, deltaY, bounds)
+  }
+
   const growsRight = handle === 'se' || handle === 'ne'
   const growsDown = handle === 'se' || handle === 'sw'
 
@@ -91,6 +106,40 @@ export function resizeCrop(
   }
 }
 
+function resizeCropFreely(
+  start: CropRect,
+  handle: ResizeHandle,
+  deltaX: number,
+  deltaY: number,
+  bounds: Size,
+): CropRect {
+  const growsRight = handle === 'se' || handle === 'ne'
+  const growsDown = handle === 'se' || handle === 'sw'
+
+  const anchorX = growsRight ? start.x : start.x + start.width
+  const anchorY = growsDown ? start.y : start.y + start.height
+  const maxWidth = growsRight ? bounds.width - anchorX : anchorX
+  const maxHeight = growsDown ? bounds.height - anchorY : anchorY
+
+  const width = clamp(
+    start.width + (growsRight ? deltaX : -deltaX),
+    Math.min(MIN_CROP_SIZE, maxWidth),
+    maxWidth,
+  )
+  const height = clamp(
+    start.height + (growsDown ? deltaY : -deltaY),
+    Math.min(MIN_CROP_SIZE, maxHeight),
+    maxHeight,
+  )
+
+  return {
+    x: growsRight ? anchorX : anchorX - width,
+    y: growsDown ? anchorY : anchorY - height,
+    width,
+    height,
+  }
+}
+
 // 画面回転やウィンドウのリサイズで表示サイズが変わったときに使う。
 // 幅と高さを別々に拡縮すると、clientWidth/Height の丸めのぶんだけ縦横比が
 // 崩れて選んだプリセットとずれるため、幅だけ拡縮して高さは比率から求める
@@ -98,7 +147,7 @@ export function rescaleCrop(
   crop: CropRect,
   from: Size,
   to: Size,
-  ratio: number,
+  ratio: number | null,
 ): CropRect {
   if (from.width <= 0 || from.height <= 0) {
     return createInitialCrop(to, ratio)
@@ -106,6 +155,17 @@ export function rescaleCrop(
 
   const scaleX = to.width / from.width
   const scaleY = to.height / from.height
+
+  if (ratio === null) {
+    const freeWidth = Math.min(crop.width * scaleX, to.width)
+    const freeHeight = Math.min(crop.height * scaleY, to.height)
+    return {
+      x: clamp(crop.x * scaleX, 0, to.width - freeWidth),
+      y: clamp(crop.y * scaleY, 0, to.height - freeHeight),
+      width: freeWidth,
+      height: freeHeight,
+    }
+  }
 
   let width = crop.width * scaleX
   let height = width / ratio

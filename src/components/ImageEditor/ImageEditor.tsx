@@ -220,9 +220,11 @@ export function ImageEditor({
           <p className="text-center text-xs text-neutral-400">
             ドラッグで移動 /
             四隅でリサイズ（ハンドルは矢印キーでも動かせます）・ 出力:{' '}
-            {preset.kind === 'original'
-              ? `元画像の比率で長辺${OUTPUT_LONG_SIDE}px`
-              : `${preset.width}×${preset.height}px`}
+            {preset.kind === 'fixed'
+              ? `${preset.width}×${preset.height}px`
+              : preset.kind === 'original'
+                ? `元画像の比率で長辺${OUTPUT_LONG_SIDE}px`
+                : `選んだ範囲の比率で長辺${OUTPUT_LONG_SIDE}px`}
           </p>
 
           <div

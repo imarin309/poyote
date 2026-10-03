@@ -28,6 +28,15 @@ describe('createInitialCrop', () => {
     expect(crop.y).toBe(0)
   })
 
+  it('比率を固定しない場合は表示領域全体を選ぶ', () => {
+    expect(createInitialCrop(BOUNDS, null)).toEqual({
+      x: 0,
+      y: 0,
+      width: 800,
+      height: 450,
+    })
+  })
+
   it('サイズが0の場合は空の矩形を返す', () => {
     expect(createInitialCrop({ width: 0, height: 0 }, 16 / 9)).toEqual({
       x: 0,
@@ -160,6 +169,39 @@ describe('resizeCrop', () => {
   })
 })
 
+describe('resizeCrop（比率を固定しない）', () => {
+  const start = { x: 200, y: 100, width: 320, height: 180 }
+
+  it('縦と横を別々に伸び縮みできる', () => {
+    expect(resizeCrop(start, 'se', 80, -50, null, BOUNDS)).toEqual({
+      x: 200,
+      y: 100,
+      width: 400,
+      height: 130,
+    })
+  })
+
+  it('nw ハンドルは右下を固定する', () => {
+    const crop = resizeCrop(start, 'nw', -40, 30, null, BOUNDS)
+    expect(crop.width).toBe(360)
+    expect(crop.height).toBe(150)
+    expect(crop.x + crop.width).toBe(520)
+    expect(crop.y + crop.height).toBe(280)
+  })
+
+  it('縦横それぞれ最小サイズより小さくならない', () => {
+    const crop = resizeCrop(start, 'se', -999, -999, null, BOUNDS)
+    expect(crop.width).toBe(MIN_CROP_SIZE)
+    expect(crop.height).toBe(MIN_CROP_SIZE)
+  })
+
+  it('縦横それぞれ境界で頭打ちになる', () => {
+    const crop = resizeCrop(start, 'se', 999, 999, null, BOUNDS)
+    expect(crop.x + crop.width).toBe(BOUNDS.width)
+    expect(crop.y + crop.height).toBe(BOUNDS.height)
+  })
+})
+
 describe('rescaleCrop', () => {
   const ratio = 16 / 9
 
@@ -186,6 +228,15 @@ describe('rescaleCrop', () => {
     expect(scaled.width / scaled.height).toBeCloseTo(ratio)
     expect(scaled.x + scaled.width).toBeLessThanOrEqual(800)
     expect(scaled.y + scaled.height).toBeLessThanOrEqual(300)
+  })
+
+  it('比率を固定しない場合は縦横を別々に拡縮する', () => {
+    const crop = { x: 100, y: 50, width: 400, height: 200 }
+    const scaled = rescaleCrop(crop, BOUNDS, { width: 400, height: 300 }, null)
+    expect(scaled.x).toBeCloseTo(50)
+    expect(scaled.y).toBeCloseTo(100 / 3)
+    expect(scaled.width).toBeCloseTo(200)
+    expect(scaled.height).toBeCloseTo(400 / 3)
   })
 
   it('元の表示サイズが0の場合は中央に作り直す', () => {

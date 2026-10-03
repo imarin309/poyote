@@ -79,15 +79,25 @@ describe('ImageEditor', () => {
     ).toBeInTheDocument()
   })
 
-  it('「そのまま」を選ぶとボタンが並びの末尾にあり、出力は元画像の比率で長辺1200pxと表示する', () => {
+  it('「そのまま」を選ぶと、出力は元画像の比率で長辺1200pxと表示する', () => {
     const originalIndex = ASPECT_PRESETS.findIndex(
       (preset) => preset.kind === 'original',
     )
-    expect(originalIndex).toBe(ASPECT_PRESETS.length - 1)
 
     renderEditor({ presetIndex: originalIndex })
     expect(screen.getByRole('button', { name: 'そのまま' })).toBeInTheDocument()
     expect(screen.getByText(/元画像の比率で長辺1200px/)).toBeInTheDocument()
+  })
+
+  it('「自由」はボタンが並びの末尾にあり、出力は選んだ範囲の比率で長辺1200pxと表示する', () => {
+    const freeIndex = ASPECT_PRESETS.findIndex(
+      (preset) => preset.kind === 'free',
+    )
+    expect(freeIndex).toBe(ASPECT_PRESETS.length - 1)
+
+    renderEditor({ presetIndex: freeIndex })
+    expect(screen.getByRole('button', { name: '自由' })).toBeInTheDocument()
+    expect(screen.getByText(/選んだ範囲の比率で長辺1200px/)).toBeInTheDocument()
   })
 
   it('プリセットボタンでonSelectPresetが呼ばれる', () => {

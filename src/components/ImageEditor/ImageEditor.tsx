@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import type { ChangeEvent, KeyboardEvent, PointerEvent } from 'react'
 import { ASPECT_PRESETS, OUTPUT_LONG_SIDE } from '../../utils/aspectPresets'
 import { MAX_OUTPUT_BYTES } from '../../utils/imageQuality'
+import { ImageDropZone } from '../ImageDropZone/ImageDropZone'
 import type { CropRect, ResizeHandle } from '../../utils/cropRect'
 import type { PreviewSource } from '../../services/cropImage'
 import type { RotateDirection } from '../../utils/rotation'
@@ -391,6 +392,12 @@ export function ImageEditor({
           </div>
         </>
       )}
+
+      <ImageDropZone
+        variant="compact"
+        onFilesSelected={onAddImages}
+        disabled={isBusy}
+      />
 
       <input
         ref={addInputRef}

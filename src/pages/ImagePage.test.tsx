@@ -177,6 +177,17 @@ describe('ImagePage の複数枚処理', () => {
     expect(screen.getByLabelText('ファイル名')).toHaveValue('c')
   })
 
+  it('編集画面のドロップ枠に落とすと件数が増える', () => {
+    renderPage()
+    selectFiles(imageFile('a.png'), imageFile('b.png'))
+
+    fireEvent.drop(screen.getByTestId('image-append-drop-zone'), {
+      dataTransfer: { files: [imageFile('c.png')] },
+    })
+
+    expect(screen.getByTestId('queue-progress')).toHaveTextContent('1 / 3 件')
+  })
+
   // ドロップゾーンは読み込み成功と同時に消えるため、編集画面にも警告を出す
   it('除外したファイルの警告を編集画面に出す', () => {
     renderPage()

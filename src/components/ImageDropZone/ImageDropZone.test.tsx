@@ -51,4 +51,37 @@ describe('ImageDropZone', () => {
       '画像ファイルを選択してください。',
     )
   })
+
+  it('compactは選択ボタンを出さず、ドロップで追加を受け付ける', () => {
+    const onFilesSelected = vi.fn()
+    render(
+      <ImageDropZone onFilesSelected={onFilesSelected} variant="compact" />,
+    )
+    const file = new File([''], 'a.png', { type: 'image/png' })
+
+    fireEvent.drop(screen.getByTestId('image-append-drop-zone'), {
+      dataTransfer: { files: [file] },
+    })
+
+    expect(onFilesSelected).toHaveBeenCalledWith([file])
+    expect(screen.queryByTestId('image-file-input')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('image-drop-zone')).not.toBeInTheDocument()
+  })
+
+  it('無効中はドロップしても渡さない', () => {
+    const onFilesSelected = vi.fn()
+    render(
+      <ImageDropZone
+        onFilesSelected={onFilesSelected}
+        variant="compact"
+        disabled
+      />,
+    )
+
+    fireEvent.drop(screen.getByTestId('image-append-drop-zone'), {
+      dataTransfer: { files: [new File([''], 'a.png', { type: 'image/png' })] },
+    })
+
+    expect(onFilesSelected).not.toHaveBeenCalled()
+  })
 })

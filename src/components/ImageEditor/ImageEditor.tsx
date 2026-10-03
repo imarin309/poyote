@@ -1,8 +1,10 @@
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import type { KeyboardEvent, PointerEvent } from 'react'
 import { ASPECT_PRESETS, OUTPUT_LONG_SIDE } from '../../utils/aspectPresets'
 import { MAX_OUTPUT_BYTES } from '../../utils/imageQuality'
 import type { CropRect, ResizeHandle } from '../../utils/cropRect'
+import type { PreviewSource } from '../../services/cropImage'
+import type { RotateDirection } from '../../utils/rotation'
 import type { LoadedImage } from '../../types/image'
 import type { SavedImage } from '../../hooks/useImageSave'
 import type { ConvertResult } from '../../hooks/useBatchConvert'
@@ -22,6 +24,7 @@ const HANDLES: { id: ResizeHandle; cursor: string; label: string }[] = [
 
 interface ImageEditorProps {
   image: LoadedImage | null
+  isRotated: boolean
   index: number
   total: number
   savedCount: number
@@ -31,16 +34,20 @@ interface ImageEditorProps {
   crop: CropRect | null
   baseFileName: string
   isSaving: boolean
+  isRotating: boolean
   isConverting: boolean
   convertProgress: { current: number; total: number }
   convertResults: ConvertResult[]
   convertZipFilename: string | null
   convertError: string | null
   error: string | null
+  rotateError: string | null
   notice: string | null
   lastSaved: SavedImage | null
   onSelectPreset: (index: number) => void
-  onMeasure: (image: HTMLImageElement) => void
+  onRotate: (direction: RotateDirection) => void
+  onDrawRotated: (canvas: HTMLCanvasElement) => boolean
+  onMeasure: (image: PreviewSource) => void
   onBeginDrag: (
     mode: 'move' | ResizeHandle,
     event: PointerEvent<HTMLElement>,
@@ -62,6 +69,7 @@ interface ImageEditorProps {
 
 export function ImageEditor({
   image,
+  isRotated,
   index,
   total,
   savedCount,
@@ -71,15 +79,19 @@ export function ImageEditor({
   crop,
   baseFileName,
   isSaving,
+  isRotating,
   isConverting,
   convertProgress,
   convertResults,
   convertZipFilename,
   convertError,
   error,
+  rotateError,
   notice,
   lastSaved,
   onSelectPreset,
+  onRotate,
+  onDrawRotated,
   onMeasure,
   onBeginDrag,
   onPointerMove,
@@ -96,7 +108,10 @@ export function ImageEditor({
   useEffect(() => {
     const handleResize = () => {
       const node = document.getElementById('crop-preview')
-      if (node instanceof HTMLImageElement) {
+      if (
+        node instanceof HTMLImageElement ||
+        node instanceof HTMLCanvasElement
+      ) {
         onMeasure(node)
       }
     }
@@ -105,12 +120,23 @@ export function ImageEditor({
     return () => window.removeEventListener('resize', handleResize)
   }, [onMeasure])
 
+  const rotatedCanvasRef = useCallback(
+    (node: HTMLCanvasElement | null) => {
+      if (node && onDrawRotated(node)) {
+        onMeasure(node)
+      }
+    },
+    [onDrawRotated, onMeasure],
+  )
+
   const preset = ASPECT_PRESETS[presetIndex]
   // 複数枚のときだけ進捗・スキップ・全てキャンセルを出す
   const hasQueue = total > 1
   const unprocessed = Math.max(total - savedCount - skippedCount, 0)
   // 切り取りの操作と一括変換は互いの結果を壊すので、走っている間は他方を止める
   const isBusy = isSaving || isConverting
+  // 回転中は差し替え前の画像から切り取ってしまうので、保存も止める
+  const isEditing = isBusy || isRotating
 
   return (
     <div className="flex w-full max-w-3xl flex-col items-center gap-4">
@@ -170,6 +196,27 @@ export function ImageEditor({
             ))}
           </div>
 
+          <div className="flex justify-center gap-2">
+            <button
+              type="button"
+              data-testid="rotate-left-button"
+              onClick={() => onRotate('left')}
+              disabled={isEditing}
+              className="rounded-md bg-neutral-800 px-3 py-1.5 text-xs font-medium text-neutral-300 hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              ↺ 左に回転
+            </button>
+            <button
+              type="button"
+              data-testid="rotate-right-button"
+              onClick={() => onRotate('right')}
+              disabled={isEditing}
+              className="rounded-md bg-neutral-800 px-3 py-1.5 text-xs font-medium text-neutral-300 hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              ↻ 右に回転
+            </button>
+          </div>
+
           <p className="text-center text-xs text-neutral-400">
             ドラッグで移動 /
             四隅でリサイズ（ハンドルは矢印キーでも動かせます）・ 出力:{' '}
@@ -187,23 +234,33 @@ export function ImageEditor({
           >
             {/* 切り取り範囲外を暗くする box-shadow は 9999px 広がるので画像の中で切る */}
             <div className="relative overflow-hidden">
-              <img
-                // 画像を切り替えたときに前の画像の計測結果を引きずらないよう作り直す
-                key={image.objectUrl}
-                id="crop-preview"
-                src={image.objectUrl}
-                alt={image.file.name}
-                draggable={false}
-                // キャッシュ済みの画像は onLoad が発火しないことがあるため、
-                // マウント時点で読み込み済みなら直接計測する
-                ref={(node) => {
-                  if (node?.complete) {
-                    onMeasure(node)
-                  }
-                }}
-                onLoad={(event) => onMeasure(event.currentTarget)}
-                className="block max-h-[60vh] max-w-full cursor-move"
-              />
+              {isRotated ? (
+                <canvas
+                  ref={rotatedCanvasRef}
+                  id="crop-preview"
+                  role="img"
+                  aria-label={image.file.name}
+                  className="block max-h-[60vh] max-w-full cursor-move"
+                />
+              ) : (
+                <img
+                  // 画像を切り替えたときに前の画像の計測結果を引きずらないよう作り直す
+                  key={image.objectUrl}
+                  id="crop-preview"
+                  src={image.objectUrl}
+                  alt={image.file.name}
+                  draggable={false}
+                  // キャッシュ済みの画像は onLoad が発火しないことがあるため、
+                  // マウント時点で読み込み済みなら直接計測する
+                  ref={(node) => {
+                    if (node?.complete) {
+                      onMeasure(node)
+                    }
+                  }}
+                  onLoad={(event) => onMeasure(event.currentTarget)}
+                  className="block max-h-[60vh] max-w-full cursor-move"
+                />
+              )}
 
               {crop && (
                 <div
@@ -263,7 +320,7 @@ export function ImageEditor({
               type="button"
               data-testid="crop-save-button"
               onClick={onSave}
-              disabled={isBusy || !crop}
+              disabled={isEditing || !crop}
               className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSaving ? '保存中…' : 'この範囲で保存'}
@@ -386,6 +443,13 @@ export function ImageEditor({
       {error && (
         <p role="alert" className="text-sm text-red-400">
           {error}
+        </p>
+      )}
+
+      {/* 保存のエラーは次に保存するまで残るので、まとめると回転の失敗が隠れる */}
+      {rotateError && (
+        <p role="alert" className="text-sm text-red-400">
+          {rotateError}
         </p>
       )}
 

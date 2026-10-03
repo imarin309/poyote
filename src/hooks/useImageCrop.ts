@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { cropImageToBlob } from '../services/cropImage'
+import type { PreviewSource } from '../services/cropImage'
 import {
   ASPECT_PRESETS,
   presetOutputSize,
@@ -46,7 +47,7 @@ export function useImageCrop({ save }: UseImageCropOptions) {
   const [presetIndex, setPresetIndex] = useState(0)
   const [geometry, setGeometry] = useState<Geometry | null>(null)
 
-  const previewImageRef = useRef<HTMLImageElement | null>(null)
+  const previewImageRef = useRef<PreviewSource | null>(null)
   const dragRef = useRef<DragState | null>(null)
 
   // 別の画像に切り替わったとき、前の画像の切り取り範囲を引き継がないようにする。
@@ -58,14 +59,14 @@ export function useImageCrop({ save }: UseImageCropOptions) {
   }, [])
 
   const measure = useCallback(
-    (image: HTMLImageElement) => {
+    (image: PreviewSource) => {
       previewImageRef.current = image
       const display = { width: image.clientWidth, height: image.clientHeight }
       // ブラウザはEXIF回転を適用済みの naturalWidth/Height を返すため、表示と比率が一致する
-      const source = {
-        width: image.naturalWidth,
-        height: image.naturalHeight,
-      }
+      const source =
+        image instanceof HTMLImageElement
+          ? { width: image.naturalWidth, height: image.naturalHeight }
+          : { width: image.width, height: image.height }
       if (
         display.width <= 0 ||
         display.height <= 0 ||

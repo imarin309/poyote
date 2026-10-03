@@ -1,17 +1,27 @@
 import type { Size, SourceRect } from '../utils/cropRect'
 import { encodeCanvasWithinSize } from './encodeImage'
 
+// 回転していない画像は <img>、回転した画像は回して描いた <canvas> がプレビューになる
+export type PreviewSource = HTMLImageElement | HTMLCanvasElement
+
+function getSourceSize(source: PreviewSource): Size {
+  return source instanceof HTMLImageElement
+    ? { width: source.naturalWidth, height: source.naturalHeight }
+    : { width: source.width, height: source.height }
+}
+
 export async function cropImageToBlob(
-  source: HTMLImageElement,
+  source: PreviewSource,
   sourceRect: SourceRect,
   targetSize: Size,
 ): Promise<Blob> {
-  if (!source.complete) {
+  if (source instanceof HTMLImageElement && !source.complete) {
     throw new Error('画像がまだ読み込まれていません。')
   }
 
   // completeは読み込みに失敗した場合もtrueになるため、実サイズで届いたか確かめる
-  if (source.naturalWidth <= 0 || source.naturalHeight <= 0) {
+  const sourceSize = getSourceSize(source)
+  if (sourceSize.width <= 0 || sourceSize.height <= 0) {
     throw new Error('画像を読み込めませんでした。')
   }
 

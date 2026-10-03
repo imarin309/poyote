@@ -1,8 +1,12 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { ImageEditor } from './ImageEditor'
+import { drawRotated } from '../../services/rotateImage'
 import { ASPECT_PRESETS } from '../../utils/aspectPresets'
 import type { LoadedImage } from '../../types/image'
+
+// jsdomはcanvasの描画に対応していないので、描く処理自体は手動確認に委ねる
+vi.mock('../../services/rotateImage', () => ({ drawRotated: vi.fn() }))
 
 const image: LoadedImage = {
   file: new File([''], 'photo.png', { type: 'image/png' }),
@@ -16,6 +20,8 @@ type Props = Parameters<typeof ImageEditor>[0]
 function renderEditor(overrides: Partial<Props> = {}) {
   const props: Props = {
     image,
+    rotation: 0,
+    rotatedSource: null,
     index: 0,
     total: 1,
     savedCount: 0,
@@ -25,6 +31,7 @@ function renderEditor(overrides: Partial<Props> = {}) {
     crop,
     baseFileName: 'photo',
     isSaving: false,
+    isRotating: false,
     isConverting: false,
     convertProgress: { current: 0, total: 0 },
     convertResults: [],
@@ -34,6 +41,7 @@ function renderEditor(overrides: Partial<Props> = {}) {
     notice: null,
     lastSaved: null,
     onSelectPreset: vi.fn(),
+    onRotate: vi.fn(),
     onMeasure: vi.fn(),
     onBeginDrag: vi.fn(),
     onPointerMove: vi.fn(),
@@ -49,8 +57,12 @@ function renderEditor(overrides: Partial<Props> = {}) {
     ...overrides,
   }
 
-  render(<ImageEditor {...props} />)
-  return props
+  const { rerender } = render(<ImageEditor {...props} />)
+  return {
+    ...props,
+    rerender: (next: Partial<Props>) =>
+      rerender(<ImageEditor {...props} {...next} />),
+  }
 }
 
 describe('ImageEditor', () => {
@@ -87,6 +99,49 @@ describe('ImageEditor', () => {
       screen.getByRole('button', { name: ASPECT_PRESETS[2].label }),
     )
     expect(props.onSelectPreset).toHaveBeenCalledWith(2)
+  })
+
+  it('回転ボタンで回す向きを伝える', () => {
+    const props = renderEditor()
+    fireEvent.click(screen.getByTestId('rotate-left-button'))
+    fireEvent.click(screen.getByTestId('rotate-right-button'))
+    expect(props.onRotate).toHaveBeenNthCalledWith(1, 'left')
+    expect(props.onRotate).toHaveBeenNthCalledWith(2, 'right')
+  })
+
+  it('回転していないときは元画像をそのままプレビューに出す', () => {
+    renderEditor()
+    const preview = screen.getByRole('img', { name: 'photo.png' })
+    expect(preview.tagName).toBe('IMG')
+    expect(preview).toHaveAttribute('src', 'blob:image')
+  })
+
+  it('回転したときは回して描いたcanvasをプレビューにして計測する', () => {
+    const rotatedSource = new Image()
+    const props = renderEditor({ rotation: 90, rotatedSource })
+    const preview = screen.getByRole('img', { name: 'photo.png' })
+    expect(preview.tagName).toBe('CANVAS')
+    expect(drawRotated).toHaveBeenCalledWith(preview, rotatedSource, 90)
+    expect(props.onMeasure).toHaveBeenCalledWith(preview)
+  })
+
+  it('切り取り範囲を動かしても回転した画像は描き直さない', () => {
+    const rotatedSource = new Image()
+    const props = renderEditor({ rotation: 90, rotatedSource })
+    vi.mocked(drawRotated).mockClear()
+
+    props.rerender({ crop: { ...crop, x: 120 } })
+    expect(drawRotated).not.toHaveBeenCalled()
+
+    props.rerender({ rotation: 180 })
+    expect(drawRotated).toHaveBeenCalledTimes(1)
+  })
+
+  it('回転中は回転も保存もできない', () => {
+    renderEditor({ isRotating: true })
+    expect(screen.getByTestId('rotate-left-button')).toBeDisabled()
+    expect(screen.getByTestId('rotate-right-button')).toBeDisabled()
+    expect(screen.getByTestId('crop-save-button')).toBeDisabled()
   })
 
   it('切り取り範囲をcropの座標どおりに配置する', () => {

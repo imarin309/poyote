@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { useImageQueue } from '../hooks/useImageQueue'
 import { useImageSave } from '../hooks/useImageSave'
 import { useImageCrop } from '../hooks/useImageCrop'
+import { useImageRotation } from '../hooks/useImageRotation'
 import { useBatchConvert } from '../hooks/useBatchConvert'
 import { ImageDropZone } from '../components/ImageDropZone/ImageDropZone'
 import { ImageEditor } from '../components/ImageEditor/ImageEditor'
@@ -49,6 +50,14 @@ export function ImagePage({ route, onNavigate, onOpenHelp }: ImagePageProps) {
   } = useImageSave(baseFileName)
   const crop = useImageCrop({ save })
   const { reset: resetCrop, confirm: confirmCrop } = crop
+
+  const {
+    rotation,
+    rotatedSource,
+    isRotating,
+    error: rotateError,
+    rotate,
+  } = useImageRotation(currentImageUrl, resetCrop)
 
   const {
     isRunning: isConverting,
@@ -123,6 +132,8 @@ export function ImagePage({ route, onNavigate, onOpenHelp }: ImagePageProps) {
         {total > 0 ? (
           <ImageEditor
             image={image}
+            rotation={rotation}
+            rotatedSource={rotatedSource}
             index={index}
             total={total}
             savedCount={savedCount}
@@ -132,15 +143,17 @@ export function ImagePage({ route, onNavigate, onOpenHelp }: ImagePageProps) {
             crop={crop.crop}
             baseFileName={baseFileName}
             isSaving={isSaving}
+            isRotating={isRotating}
             isConverting={isConverting}
             convertProgress={convertProgress}
             convertResults={convertResults}
             convertZipFilename={convertZipFilename}
             convertError={convertError}
-            error={saveError}
+            error={saveError ?? rotateError}
             notice={queueError}
             lastSaved={lastSaved}
             onSelectPreset={crop.selectPreset}
+            onRotate={(direction) => void rotate(direction)}
             onMeasure={crop.measure}
             onBeginDrag={crop.beginDrag}
             onPointerMove={crop.handlePointerMove}

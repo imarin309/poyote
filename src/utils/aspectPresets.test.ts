@@ -9,6 +9,7 @@ const fixed: AspectPreset = {
   height: 675,
 }
 const original: AspectPreset = { kind: 'original', label: 'そのまま' }
+const free: AspectPreset = { kind: 'free', label: '自由' }
 
 const sourceSize = { width: 3000, height: 4000 }
 const sourceRect = { left: 100, top: 200, width: 1500, height: 2000 }
@@ -20,6 +21,10 @@ describe('presetRatio', () => {
 
   it('「そのまま」は元画像の比率になる', () => {
     expect(presetRatio(original, sourceSize)).toBeCloseTo(3000 / 4000)
+  })
+
+  it('「自由」は比率を固定しない', () => {
+    expect(presetRatio(free, sourceSize)).toBeNull()
   })
 })
 
@@ -36,6 +41,12 @@ describe('presetOutputSize', () => {
       width: 900,
       height: 1200,
     })
+  })
+
+  it('「自由」も切り取った範囲の比率のまま長辺を1200pxに揃える', () => {
+    expect(
+      presetOutputSize(free, { left: 0, top: 0, width: 2000, height: 500 }),
+    ).toEqual({ width: 1200, height: 300 })
   })
 })
 

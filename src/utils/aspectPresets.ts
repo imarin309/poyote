@@ -3,6 +3,7 @@ import type { Size, SourceRect } from './cropRect'
 export type AspectPreset =
   | { kind: 'fixed'; label: string; width: number; height: number }
   | { kind: 'original'; label: string }
+  | { kind: 'free'; label: string }
 
 export const ASPECT_PRESETS: AspectPreset[] = [
   { kind: 'fixed', label: '横長 16:9', width: 1200, height: 675 },
@@ -10,9 +11,17 @@ export const ASPECT_PRESETS: AspectPreset[] = [
   { kind: 'fixed', label: '縦長 3:4', width: 800, height: 1067 },
   { kind: 'fixed', label: '縦長 2:3', width: 800, height: 1200 },
   { kind: 'original', label: 'そのまま' },
+  { kind: 'free', label: '自由' },
 ]
 
-export function presetRatio(preset: AspectPreset, sourceSize: Size): number {
+// null は比率を固定しないことを表す
+export function presetRatio(
+  preset: AspectPreset,
+  sourceSize: Size,
+): number | null {
+  if (preset.kind === 'free') {
+    return null
+  }
   if (preset.kind === 'original') {
     return sourceSize.width / sourceSize.height
   }

@@ -16,6 +16,7 @@ const NATURAL = { width: 1600, height: 900 }
 const ORIGINAL_INDEX = ASPECT_PRESETS.findIndex(
   (preset) => preset.kind === 'original',
 )
+const FREE_INDEX = ASPECT_PRESETS.findIndex((preset) => preset.kind === 'free')
 
 function fakeImage(
   display = { width: 800, height: 450 },
@@ -61,7 +62,7 @@ describe('useImageCrop', () => {
     const crop = result.current.crop
     expect(crop).not.toBeNull()
     expect(crop!.width / crop!.height).toBeCloseTo(
-      presetRatio(ASPECT_PRESETS[0], NATURAL),
+      presetRatio(ASPECT_PRESETS[0], NATURAL)!,
     )
   })
 
@@ -88,7 +89,7 @@ describe('useImageCrop', () => {
     expect(result.current.presetIndex).toBe(2)
     const crop = result.current.crop
     expect(crop!.width / crop!.height).toBeCloseTo(
-      presetRatio(ASPECT_PRESETS[2], NATURAL),
+      presetRatio(ASPECT_PRESETS[2], NATURAL)!,
     )
   })
 
@@ -195,6 +196,35 @@ describe('useImageCrop', () => {
     expect(crop.width / crop.height).toBeCloseTo(natural.width / natural.height)
   })
 
+  it('「自由」は縦だけ縮めても幅を保ち、選んだ範囲の比率で書き出す', async () => {
+    const { result } = setup()
+
+    act(() => {
+      result.current.selectPreset(FREE_INDEX)
+    })
+    act(() => {
+      result.current.measure(fakeImage())
+    })
+    expect(result.current.crop).toEqual({ x: 0, y: 0, width: 800, height: 450 })
+
+    act(() => {
+      result.current.resizeByKey('se', {
+        key: 'ArrowUp',
+        shiftKey: true,
+        preventDefault: vi.fn(),
+      } as unknown as React.KeyboardEvent<HTMLElement>)
+    })
+    expect(result.current.crop).toEqual({ x: 0, y: 0, width: 800, height: 430 })
+
+    await act(async () => {
+      await result.current.confirm()
+    })
+
+    const [, sourceRect, targetSize] = vi.mocked(cropImageToBlob).mock.calls[0]
+    expect(sourceRect).toEqual({ left: 0, top: 0, width: 1600, height: 860 })
+    expect(targetSize).toEqual({ width: 1200, height: 645 })
+  })
+
   it('矢印キーで切り取り範囲をリサイズできる', () => {
     const { result } = setup()
 
@@ -214,7 +244,7 @@ describe('useImageCrop', () => {
     expect(result.current.crop!.width).toBeLessThan(before)
     expect(
       result.current.crop!.width / result.current.crop!.height,
-    ).toBeCloseTo(presetRatio(ASPECT_PRESETS[0], NATURAL))
+    ).toBeCloseTo(presetRatio(ASPECT_PRESETS[0], NATURAL)!)
   })
 
   it('対応しないキーでは何も起きない', () => {

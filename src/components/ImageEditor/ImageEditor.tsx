@@ -3,9 +3,8 @@ import type { KeyboardEvent, PointerEvent } from 'react'
 import { ASPECT_PRESETS, OUTPUT_LONG_SIDE } from '../../utils/aspectPresets'
 import { MAX_OUTPUT_BYTES } from '../../utils/imageQuality'
 import type { CropRect, ResizeHandle } from '../../utils/cropRect'
-import { drawRotated } from '../../services/rotateImage'
 import type { PreviewSource } from '../../services/cropImage'
-import type { RotateDirection, Rotation } from '../../utils/rotation'
+import type { RotateDirection } from '../../utils/rotation'
 import type { LoadedImage } from '../../types/image'
 import type { SavedImage } from '../../hooks/useImageSave'
 import type { ConvertResult } from '../../hooks/useBatchConvert'
@@ -25,8 +24,7 @@ const HANDLES: { id: ResizeHandle; cursor: string; label: string }[] = [
 
 interface ImageEditorProps {
   image: LoadedImage | null
-  rotation: Rotation
-  rotatedSource: HTMLImageElement | null
+  isRotated: boolean
   index: number
   total: number
   savedCount: number
@@ -43,10 +41,12 @@ interface ImageEditorProps {
   convertZipFilename: string | null
   convertError: string | null
   error: string | null
+  rotateError: string | null
   notice: string | null
   lastSaved: SavedImage | null
   onSelectPreset: (index: number) => void
   onRotate: (direction: RotateDirection) => void
+  onDrawRotated: (canvas: HTMLCanvasElement) => boolean
   onMeasure: (image: PreviewSource) => void
   onBeginDrag: (
     mode: 'move' | ResizeHandle,
@@ -69,8 +69,7 @@ interface ImageEditorProps {
 
 export function ImageEditor({
   image,
-  rotation,
-  rotatedSource,
+  isRotated,
   index,
   total,
   savedCount,
@@ -87,10 +86,12 @@ export function ImageEditor({
   convertZipFilename,
   convertError,
   error,
+  rotateError,
   notice,
   lastSaved,
   onSelectPreset,
   onRotate,
+  onDrawRotated,
   onMeasure,
   onBeginDrag,
   onPointerMove,
@@ -119,16 +120,13 @@ export function ImageEditor({
     return () => window.removeEventListener('resize', handleResize)
   }, [onMeasure])
 
-  // ドラッグのたびに大きな画像を描き直さないよう、角度か画像が変わったときだけ描く
   const rotatedCanvasRef = useCallback(
     (node: HTMLCanvasElement | null) => {
-      if (!node || !rotatedSource) {
-        return
+      if (node && onDrawRotated(node)) {
+        onMeasure(node)
       }
-      drawRotated(node, rotatedSource, rotation)
-      onMeasure(node)
     },
-    [onMeasure, rotatedSource, rotation],
+    [onDrawRotated, onMeasure],
   )
 
   const preset = ASPECT_PRESETS[presetIndex]
@@ -236,7 +234,7 @@ export function ImageEditor({
           >
             {/* 切り取り範囲外を暗くする box-shadow は 9999px 広がるので画像の中で切る */}
             <div className="relative overflow-hidden">
-              {rotatedSource ? (
+              {isRotated ? (
                 <canvas
                   ref={rotatedCanvasRef}
                   id="crop-preview"
@@ -445,6 +443,13 @@ export function ImageEditor({
       {error && (
         <p role="alert" className="text-sm text-red-400">
           {error}
+        </p>
+      )}
+
+      {/* 保存のエラーは次に保存するまで残るので、まとめると回転の失敗が隠れる */}
+      {rotateError && (
+        <p role="alert" className="text-sm text-red-400">
+          {rotateError}
         </p>
       )}
 

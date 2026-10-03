@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { loadImageElement } from '../services/loadImageElement'
+import { drawRotated } from '../services/rotateImage'
 import { nextRotation } from '../utils/rotation'
 import type { RotateDirection, Rotation } from '../utils/rotation'
 
@@ -78,11 +79,34 @@ export function useImageRotation(
     [onRotated, rotation, sourceImage, sourceUrl],
   )
 
+  // iOS Safariなどは大きすぎるcanvasのコンテキストを返さないため、
+  // 描けなかったら回転エラーにして元の向きに戻す
+  const drawPreview = useCallback(
+    (canvas: HTMLCanvasElement): boolean => {
+      if (rotation === 0 || !sourceImage) {
+        return false
+      }
+
+      try {
+        drawRotated(canvas, sourceImage, rotation)
+        return true
+      } catch (err) {
+        onRotated()
+        setRotation(0)
+        setError(
+          err instanceof Error ? err.message : '画像の回転に失敗しました。',
+        )
+        return false
+      }
+    },
+    [onRotated, rotation, sourceImage],
+  )
+
   return {
-    rotation,
-    rotatedSource: rotation === 0 ? null : sourceImage,
+    isRotated: rotation !== 0 && sourceImage !== null,
     isRotating,
     error,
     rotate,
+    drawPreview,
   }
 }

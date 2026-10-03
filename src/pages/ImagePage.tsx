@@ -52,11 +52,11 @@ export function ImagePage({ route, onNavigate, onOpenHelp }: ImagePageProps) {
   const { reset: resetCrop, confirm: confirmCrop } = crop
 
   const {
-    rotation,
-    rotatedSource,
+    isRotated,
     isRotating,
     error: rotateError,
     rotate,
+    drawPreview,
   } = useImageRotation(currentImageUrl, resetCrop)
 
   const {
@@ -132,8 +132,7 @@ export function ImagePage({ route, onNavigate, onOpenHelp }: ImagePageProps) {
         {total > 0 ? (
           <ImageEditor
             image={image}
-            rotation={rotation}
-            rotatedSource={rotatedSource}
+            isRotated={isRotated}
             index={index}
             total={total}
             savedCount={savedCount}
@@ -149,11 +148,13 @@ export function ImagePage({ route, onNavigate, onOpenHelp }: ImagePageProps) {
             convertResults={convertResults}
             convertZipFilename={convertZipFilename}
             convertError={convertError}
-            error={saveError ?? rotateError}
+            error={saveError}
+            rotateError={rotateError}
             notice={queueError}
             lastSaved={lastSaved}
             onSelectPreset={crop.selectPreset}
             onRotate={(direction) => void rotate(direction)}
+            onDrawRotated={drawPreview}
             onMeasure={crop.measure}
             onBeginDrag={crop.beginDrag}
             onPointerMove={crop.handlePointerMove}

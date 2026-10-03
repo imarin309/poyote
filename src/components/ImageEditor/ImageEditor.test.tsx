@@ -1,12 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { ImageEditor } from './ImageEditor'
-import { drawRotated } from '../../services/rotateImage'
 import { ASPECT_PRESETS } from '../../utils/aspectPresets'
 import type { LoadedImage } from '../../types/image'
-
-// jsdomはcanvasの描画に対応していないので、描く処理自体は手動確認に委ねる
-vi.mock('../../services/rotateImage', () => ({ drawRotated: vi.fn() }))
 
 const image: LoadedImage = {
   file: new File([''], 'photo.png', { type: 'image/png' }),
@@ -20,8 +16,7 @@ type Props = Parameters<typeof ImageEditor>[0]
 function renderEditor(overrides: Partial<Props> = {}) {
   const props: Props = {
     image,
-    rotation: 0,
-    rotatedSource: null,
+    isRotated: false,
     index: 0,
     total: 1,
     savedCount: 0,
@@ -38,10 +33,12 @@ function renderEditor(overrides: Partial<Props> = {}) {
     convertZipFilename: null,
     convertError: null,
     error: null,
+    rotateError: null,
     notice: null,
     lastSaved: null,
     onSelectPreset: vi.fn(),
     onRotate: vi.fn(),
+    onDrawRotated: vi.fn(() => true),
     onMeasure: vi.fn(),
     onBeginDrag: vi.fn(),
     onPointerMove: vi.fn(),
@@ -117,24 +114,37 @@ describe('ImageEditor', () => {
   })
 
   it('回転したときは回して描いたcanvasをプレビューにして計測する', () => {
-    const rotatedSource = new Image()
-    const props = renderEditor({ rotation: 90, rotatedSource })
+    const props = renderEditor({ isRotated: true })
     const preview = screen.getByRole('img', { name: 'photo.png' })
     expect(preview.tagName).toBe('CANVAS')
-    expect(drawRotated).toHaveBeenCalledWith(preview, rotatedSource, 90)
+    expect(props.onDrawRotated).toHaveBeenCalledWith(preview)
     expect(props.onMeasure).toHaveBeenCalledWith(preview)
   })
 
   it('切り取り範囲を動かしても回転した画像は描き直さない', () => {
-    const rotatedSource = new Image()
-    const props = renderEditor({ rotation: 90, rotatedSource })
-    vi.mocked(drawRotated).mockClear()
+    const props = renderEditor({ isRotated: true })
+    vi.mocked(props.onDrawRotated).mockClear()
 
     props.rerender({ crop: { ...crop, x: 120 } })
-    expect(drawRotated).not.toHaveBeenCalled()
+    expect(props.onDrawRotated).not.toHaveBeenCalled()
+  })
 
-    props.rerender({ rotation: 180 })
-    expect(drawRotated).toHaveBeenCalledTimes(1)
+  it('描けなかったcanvasは計測しない', () => {
+    const props = renderEditor({
+      isRotated: true,
+      onDrawRotated: vi.fn(() => false),
+    })
+    expect(props.onMeasure).not.toHaveBeenCalled()
+  })
+
+  it('保存のエラーがあっても回転のエラーを隠さない', () => {
+    renderEditor({
+      error: '画像の保存に失敗しました。',
+      rotateError: '画像の回転に失敗しました。',
+    })
+    const alerts = screen.getAllByRole('alert')
+    expect(alerts).toHaveLength(2)
+    expect(alerts[1]).toHaveTextContent('画像の回転に失敗しました。')
   })
 
   it('回転中は回転も保存もできない', () => {

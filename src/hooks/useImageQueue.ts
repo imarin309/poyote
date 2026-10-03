@@ -30,23 +30,14 @@ export function useImageQueue() {
     return revokeAll
   }, [revokeAll])
 
-  // 読み込み直後にそのまま切り取りを開始できるよう、先頭の画像を返す
-  const load = useCallback(
-    (files: File[]): LoadedImage | null => {
+  const createLoadedImages = useCallback(
+    (files: File[]): LoadedImage[] | null => {
       const imageFiles = files.filter(isImageFile)
 
       if (imageFiles.length === 0) {
         setError('画像ファイルを選択してください。')
         return null
       }
-
-      revokeAll()
-
-      const images = imageFiles.map((file) => {
-        const objectUrl = URL.createObjectURL(file)
-        objectUrlsRef.current.push(objectUrl)
-        return { file, objectUrl }
-      })
 
       // この警告はドロップゾーンだけに出すと、読み込み成功と同時に
       // ドロップゾーンが消えて誰にも見えないので、編集画面にも流す
@@ -55,10 +46,48 @@ export function useImageQueue() {
           ? `画像でないファイル${files.length - imageFiles.length}件を除外しました。`
           : null,
       )
+
+      return imageFiles.map((file) => ({
+        file,
+        objectUrl: URL.createObjectURL(file),
+      }))
+    },
+    [],
+  )
+
+  // 読み込み直後にそのまま切り取りを開始できるよう、先頭の画像を返す
+  const load = useCallback(
+    (files: File[]): LoadedImage | null => {
+      const images = createLoadedImages(files)
+      if (!images) {
+        return null
+      }
+
+      revokeAll()
+      objectUrlsRef.current = images.map((image) => image.objectUrl)
       setState({ images, index: 0, savedCount: 0, skippedCount: 0 })
       return images[0]
     },
-    [revokeAll],
+    [createLoadedImages, revokeAll],
+  )
+
+  // 進行状況は保ったまま末尾に足す。完了後なら index が追加分の先頭を指すので、
+  // そのまま続きの切り取りに入れる
+  const append = useCallback(
+    (files: File[]): boolean => {
+      const images = createLoadedImages(files)
+      if (!images) {
+        return false
+      }
+
+      objectUrlsRef.current.push(...images.map((image) => image.objectUrl))
+      setState((previous) => ({
+        ...previous,
+        images: [...previous.images, ...images],
+      }))
+      return true
+    },
+    [createLoadedImages],
   )
 
   // 次の対象は再レンダー後の current から読む。setState の更新関数は同期実行
@@ -111,6 +140,7 @@ export function useImageQueue() {
     isFinished: state.images.length > 0 && state.index >= state.images.length,
     error,
     load,
+    append,
     advance,
     cancel,
     restart,

@@ -26,6 +26,12 @@ function selectFiles(...files: File[]) {
   return files
 }
 
+function addFiles(...files: File[]) {
+  fireEvent.change(screen.getByTestId('add-image-input'), {
+    target: { files },
+  })
+}
+
 function renderPage() {
   render(<ImagePage route="image" onNavigate={vi.fn()} onOpenHelp={vi.fn()} />)
 }
@@ -150,6 +156,27 @@ describe('ImagePage の複数枚処理', () => {
     expect(screen.getByLabelText('ファイル名')).toHaveValue('a')
   })
 
+  it('切り取りの途中で追加すると今の画像のまま件数だけ増える', () => {
+    renderPage()
+    selectFiles(imageFile('a.png'), imageFile('b.png'))
+
+    addFiles(imageFile('c.png'))
+
+    expect(screen.getByTestId('queue-progress')).toHaveTextContent('1 / 3 件')
+    expect(screen.getByLabelText('ファイル名')).toHaveValue('a')
+  })
+
+  it('完了後に追加すると追加した画像から切り取りを再開する', () => {
+    renderPage()
+    selectFiles(imageFile('a.png'), imageFile('b.png'))
+    fireEvent.click(screen.getByTestId('cancel-queue-button'))
+
+    addFiles(imageFile('c.png'))
+
+    expect(screen.getByTestId('queue-progress')).toHaveTextContent('3 / 3 件')
+    expect(screen.getByLabelText('ファイル名')).toHaveValue('c')
+  })
+
   // ドロップゾーンは読み込み成功と同時に消えるため、編集画面にも警告を出す
   it('除外したファイルの警告を編集画面に出す', () => {
     renderPage()
@@ -236,6 +263,19 @@ describe('ImagePage の一括変換', () => {
 
     fireEvent.click(screen.getByTestId('change-image-button'))
     selectFiles(imageFile('b.png'))
+
+    expect(screen.queryByTestId('convert-results')).not.toBeInTheDocument()
+  })
+
+  // 追加前の件数で変換した結果が、追加後の全件分に見えてしまうため
+  it('画像を追加すると前回の変換結果は消える', async () => {
+    renderPage()
+    selectFiles(imageFile('a.png'))
+
+    fireEvent.click(screen.getByTestId('batch-convert-button'))
+    await screen.findByTestId('convert-results')
+
+    addFiles(imageFile('b.png'))
 
     expect(screen.queryByTestId('convert-results')).not.toBeInTheDocument()
   })

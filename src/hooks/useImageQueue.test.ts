@@ -277,3 +277,113 @@ describe('useImageQueue の中止と再開', () => {
     expect(result.current.current?.file.name).toBe('a.png')
   })
 })
+
+describe('useImageQueue の追加', () => {
+  beforeEach(() => {
+    let counter = 0
+    vi.stubGlobal(
+      'URL',
+      Object.assign(URL, {
+        createObjectURL: vi.fn(() => `blob:mock-${counter++}`),
+        revokeObjectURL: vi.fn(),
+      }),
+    )
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('切り取りの途中で追加しても現在の画像と進行状況は変わらない', () => {
+    const { result } = renderHook(() => useImageQueue())
+
+    act(() => {
+      result.current.load([imageFile('a.png'), imageFile('b.png')])
+    })
+    act(() => {
+      result.current.advance(true)
+    })
+    act(() => {
+      result.current.append([imageFile('c.png')])
+    })
+
+    expect(result.current.total).toBe(3)
+    expect(result.current.index).toBe(1)
+    expect(result.current.savedCount).toBe(1)
+    expect(result.current.current?.file.name).toBe('b.png')
+    expect(result.current.images[2].file.name).toBe('c.png')
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled()
+  })
+
+  it('完了後に追加すると追加分の先頭から続きを切り取れる', () => {
+    const { result } = renderHook(() => useImageQueue())
+
+    act(() => {
+      result.current.load([imageFile('a.png')])
+    })
+    act(() => {
+      result.current.advance(false)
+    })
+    act(() => {
+      result.current.append([imageFile('b.png'), imageFile('c.png')])
+    })
+
+    expect(result.current.isFinished).toBe(false)
+    expect(result.current.current?.file.name).toBe('b.png')
+    expect(result.current.skippedCount).toBe(1)
+  })
+
+  it('画像以外を除外して追加し、除外を警告する', () => {
+    const { result } = renderHook(() => useImageQueue())
+
+    act(() => {
+      result.current.load([imageFile('a.png')])
+    })
+    act(() => {
+      result.current.append([
+        imageFile('b.png'),
+        new File([''], 'clip.mp4', { type: 'video/mp4' }),
+      ])
+    })
+
+    expect(result.current.total).toBe(2)
+    expect(result.current.error).toBe('画像でないファイル1件を除外しました。')
+  })
+
+  it('画像が1件もなければキューを変えずにエラーにする', () => {
+    const { result } = renderHook(() => useImageQueue())
+
+    act(() => {
+      result.current.load([imageFile('a.png')])
+    })
+    const appended: { value: boolean | null } = { value: null }
+    act(() => {
+      appended.value = result.current.append([
+        new File([''], 'clip.mp4', { type: 'video/mp4' }),
+      ])
+    })
+
+    expect(appended.value).toBe(false)
+    expect(result.current.total).toBe(1)
+    expect(result.current.error).toBe('画像ファイルを選択してください。')
+  })
+
+  it('追加した画像のObject URLもclearで解放する', () => {
+    const { result } = renderHook(() => useImageQueue())
+
+    act(() => {
+      result.current.load([imageFile('a.png')])
+    })
+    act(() => {
+      result.current.append([imageFile('b.png')])
+    })
+    const urls = result.current.images.map((image) => image.objectUrl)
+
+    act(() => {
+      result.current.clear()
+    })
+
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith(urls[0])
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith(urls[1])
+  })
+})

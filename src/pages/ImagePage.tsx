@@ -27,6 +27,7 @@ export function ImagePage({ route, onNavigate, onOpenHelp }: ImagePageProps) {
     isFinished,
     error: queueError,
     load,
+    append,
     advance,
     cancel,
     restart,
@@ -78,6 +79,20 @@ export function ImagePage({ route, onNavigate, onOpenHelp }: ImagePageProps) {
       }
     },
     [load, resetBatchConvert, resetCrop],
+  )
+
+  // 一括変換の結果は追加前の件数のものなので捨てる。切り取り中の範囲は
+  // 画像が変わらないので残し、完了後に追加分へ進むときだけ作り直す
+  const handleFilesAppended = useCallback(
+    (files: File[]) => {
+      if (append(files)) {
+        resetBatchConvert()
+        if (isFinished) {
+          resetCrop()
+        }
+      }
+    },
+    [append, isFinished, resetBatchConvert, resetCrop],
   )
 
   // 画像が変わるので、前の画像の切り取り範囲は捨てて作り直す
@@ -166,6 +181,7 @@ export function ImagePage({ route, onNavigate, onOpenHelp }: ImagePageProps) {
             onCancelAll={handleCancelAll}
             onRestart={handleRestart}
             onChangeImage={handleChangeImage}
+            onAddImages={handleFilesAppended}
             onBatchConvert={handleBatchConvert}
           />
         ) : (

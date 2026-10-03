@@ -50,6 +50,7 @@ function renderEditor(overrides: Partial<Props> = {}) {
     onCancelAll: vi.fn(),
     onRestart: vi.fn(),
     onChangeImage: vi.fn(),
+    onAddImages: vi.fn(),
     onBatchConvert: vi.fn(),
     ...overrides,
   }
@@ -233,6 +234,7 @@ describe('ImageEditor', () => {
     renderEditor({ isSaving: true })
     expect(screen.getByTestId('crop-save-button')).toBeDisabled()
     expect(screen.getByTestId('change-image-button')).toBeDisabled()
+    expect(screen.getByTestId('add-image-button')).toBeDisabled()
   })
 
   it('ファイル名の編集でonBaseFileNameChangeが呼ばれる', () => {
@@ -247,6 +249,32 @@ describe('ImageEditor', () => {
     const props = renderEditor()
     fireEvent.click(screen.getByTestId('change-image-button'))
     expect(props.onChangeImage).toHaveBeenCalled()
+  })
+
+  it('画像を追加で選んだファイルをonAddImagesに渡す', () => {
+    const props = renderEditor()
+    const file = new File([''], 'more.png', { type: 'image/png' })
+    fireEvent.change(screen.getByTestId('add-image-input'), {
+      target: { files: [file] },
+    })
+    expect(props.onAddImages).toHaveBeenCalledWith([file])
+  })
+
+  it('ドロップ枠に落とした画像をonAddImagesに渡す', () => {
+    const props = renderEditor()
+    const file = new File([''], 'more.png', { type: 'image/png' })
+    fireEvent.drop(screen.getByTestId('image-append-drop-zone'), {
+      dataTransfer: { files: [file] },
+    })
+    expect(props.onAddImages).toHaveBeenCalledWith([file])
+  })
+
+  it('保存中はドロップ枠に落としても追加しない', () => {
+    const props = renderEditor({ isSaving: true })
+    fireEvent.drop(screen.getByTestId('image-append-drop-zone'), {
+      dataTransfer: { files: [new File([''], 'a.png', { type: 'image/png' })] },
+    })
+    expect(props.onAddImages).not.toHaveBeenCalled()
   })
 
   it('保存後も切り取りUIは残したまま保存結果を出す', () => {
@@ -339,6 +367,16 @@ describe('ImageEditor の複数枚処理', () => {
     const props = renderEditor({ image: null, isFinished: true, total: 2 })
     fireEvent.click(screen.getByTestId('change-image-button'))
     expect(props.onChangeImage).toHaveBeenCalled()
+  })
+
+  it('サマリにもドロップ枠を出す', () => {
+    renderEditor({ image: null, isFinished: true, total: 2 })
+    expect(screen.getByTestId('image-append-drop-zone')).toBeInTheDocument()
+  })
+
+  it('サマリからも画像を追加できる', () => {
+    renderEditor({ image: null, isFinished: true, total: 2 })
+    expect(screen.getByTestId('add-image-button')).toBeEnabled()
   })
 })
 

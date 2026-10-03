@@ -1,7 +1,8 @@
-import { useCallback, useEffect } from 'react'
-import type { KeyboardEvent, PointerEvent } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
+import type { ChangeEvent, KeyboardEvent, PointerEvent } from 'react'
 import { ASPECT_PRESETS, OUTPUT_LONG_SIDE } from '../../utils/aspectPresets'
 import { MAX_OUTPUT_BYTES } from '../../utils/imageQuality'
+import { ImageDropZone } from '../ImageDropZone/ImageDropZone'
 import type { CropRect, ResizeHandle } from '../../utils/cropRect'
 import type { PreviewSource } from '../../services/cropImage'
 import type { RotateDirection } from '../../utils/rotation'
@@ -64,6 +65,7 @@ interface ImageEditorProps {
   onCancelAll: () => void
   onRestart: () => void
   onChangeImage: () => void
+  onAddImages: (files: File[]) => void
   onBatchConvert: () => void
 }
 
@@ -103,8 +105,11 @@ export function ImageEditor({
   onCancelAll,
   onRestart,
   onChangeImage,
+  onAddImages,
   onBatchConvert,
 }: ImageEditorProps) {
+  const addInputRef = useRef<HTMLInputElement>(null)
+
   useEffect(() => {
     const handleResize = () => {
       const node = document.getElementById('crop-preview')
@@ -128,6 +133,14 @@ export function ImageEditor({
     },
     [onDrawRotated, onMeasure],
   )
+
+  const handleAddInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? [])
+    if (files.length > 0) {
+      onAddImages(files)
+    }
+    event.target.value = ''
+  }
 
   const preset = ASPECT_PRESETS[presetIndex]
   // 複数枚のときだけ進捗・スキップ・全てキャンセルを出す
@@ -156,6 +169,15 @@ export function ImageEditor({
               className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
               最初から切り取る
+            </button>
+            <button
+              type="button"
+              data-testid="add-image-button"
+              onClick={() => addInputRef.current?.click()}
+              disabled={isConverting}
+              className="rounded-md bg-neutral-700 px-4 py-2 text-sm font-medium text-neutral-100 hover:bg-neutral-600 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              画像を追加
             </button>
             <button
               type="button"
@@ -351,6 +373,15 @@ export function ImageEditor({
             )}
             <button
               type="button"
+              data-testid="add-image-button"
+              onClick={() => addInputRef.current?.click()}
+              disabled={isBusy}
+              className="rounded-md bg-neutral-700 px-4 py-2 text-sm font-medium text-neutral-100 hover:bg-neutral-600 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              画像を追加
+            </button>
+            <button
+              type="button"
               data-testid="change-image-button"
               onClick={onChangeImage}
               disabled={isBusy}
@@ -361,6 +392,22 @@ export function ImageEditor({
           </div>
         </>
       )}
+
+      <ImageDropZone
+        variant="compact"
+        onFilesSelected={onAddImages}
+        disabled={isBusy}
+      />
+
+      <input
+        ref={addInputRef}
+        data-testid="add-image-input"
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={handleAddInputChange}
+      />
 
       {/* 切り取りとは別物なので、枠と見出しで「全件をそのまま変換する」側だと分かるようにする */}
       <section

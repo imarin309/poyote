@@ -9,7 +9,7 @@ interface VideoPlayerProps {
 export function VideoPlayer({ video, videoRef, onError }: VideoPlayerProps) {
   return (
     <div className="flex w-full max-w-3xl flex-col gap-3">
-      <p className="truncate text-sm text-neutral-300" title={video.file.name}>
+      <p className="text-sm wrap-anywhere text-neutral-300">
         {video.file.name}
       </p>
 

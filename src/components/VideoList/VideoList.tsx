@@ -49,7 +49,7 @@ export function VideoList({
                     : 'border-neutral-700 text-neutral-300 hover:bg-neutral-800'
                 }`}
               >
-                <span className="truncate">{video.file.name}</span>
+                <span className="wrap-anywhere">{video.file.name}</span>
                 <span className="shrink-0 text-xs text-neutral-400">
                   {duration}
                 </span>

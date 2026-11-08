@@ -4,20 +4,14 @@ import { VideoDropZone } from '../components/VideoDropZone/VideoDropZone'
 import { CompressSettings } from '../components/CompressSettings/CompressSettings'
 import { CompressResult } from '../components/CompressResult/CompressResult'
 import { usePlaybackControls } from '../hooks/usePlaybackControls'
-import type {
-  CompressionSettings,
-  CompressionStatus,
-} from '../types/compression'
+import { useVideoCompression } from '../hooks/useVideoCompression'
+import type { CompressionSettings } from '../types/compression'
 import type { Route } from '../types/route'
 
 const DEFAULT_SETTINGS: CompressionSettings = {
   quality: 'standard',
   removeAudio: true,
 }
-
-// 変換処理は別PRで入れる。それまでは画面だけ公開し、変換ボタンは押せないままにする
-const PLACEHOLDER_STATUS: CompressionStatus = { phase: 'idle' }
-const noop = () => {}
 
 interface CompressPageProps {
   route: Route
@@ -29,8 +23,16 @@ export function CompressPage({ route, onNavigate }: CompressPageProps) {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS)
   const [posterTime, setPosterTime] = useState(1)
   const { videoRef, currentTime, duration } = usePlaybackControls()
-
-  const status = PLACEHOLDER_STATUS
+  const {
+    status,
+    start,
+    cancel,
+    saveVideo,
+    savePoster,
+    isSavingPoster,
+    posterError,
+  } = useVideoCompression(file)
+  const isConverting = status.phase === 'converting'
 
   const handleFilesSelected = (files: File[]) => {
     setFile(files[0] ?? null)
@@ -65,7 +67,7 @@ export function CompressPage({ route, onNavigate }: CompressPageProps) {
           <button
             type="button"
             onClick={() => setFile(null)}
-            disabled={status.phase === 'converting'}
+            disabled={isConverting}
             className="shrink-0 rounded-md border border-neutral-600 px-3 py-1.5 text-sm hover:border-blue-400 disabled:cursor-not-allowed disabled:opacity-50"
           >
             別の動画を選ぶ
@@ -75,26 +77,23 @@ export function CompressPage({ route, onNavigate }: CompressPageProps) {
         <CompressSettings
           settings={settings}
           onSettingsChange={setSettings}
-          onConvert={noop}
-          disabled
+          onConvert={() => void start(settings)}
+          disabled={isConverting}
         />
-        <p className="text-center text-sm text-neutral-400">
-          変換機能は準備中です。
-        </p>
 
         <CompressResult
           status={status}
           originalSize={file.size}
-          onCancel={noop}
+          onCancel={cancel}
           videoRef={videoRef}
           currentTime={currentTime}
           duration={duration}
-          onSaveVideo={noop}
+          onSaveVideo={saveVideo}
           posterTime={posterTime}
           onPosterTimeChange={setPosterTime}
-          onSavePoster={noop}
-          isSavingPoster={false}
-          posterError={null}
+          onSavePoster={() => void savePoster(posterTime, duration)}
+          isSavingPoster={isSavingPoster}
+          posterError={posterError}
         />
       </main>
     </div>

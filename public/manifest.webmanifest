@@ -1,7 +1,7 @@
 {
   "name": "poyote",
   "short_name": "poyote",
-  "description": "動画や画像から公開用の画像を作るツール",
+  "description": "動画や画像をWebに公開しやすい形に整えるツール",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

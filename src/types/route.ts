@@ -21,7 +21,7 @@ export const ROUTE_LABELS: Record<Route, string> = {
 }
 
 export const ROUTE_DESCRIPTIONS: Record<Route, string> = {
-  top: '動画や画像から公開用の画像を作るツール',
+  top: '動画や画像をWebに公開しやすい形に整えるツール',
   video: '動画から好きなフレームを切り抜いて画像保存するツール',
   image: '手元の画像を好きな比率に切り取ってリサイズするツール',
   compress: '手元の動画をWeb公開用の軽いmp4に変換するツール',

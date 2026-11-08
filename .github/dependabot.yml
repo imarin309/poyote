@@ -4,8 +4,30 @@ updates:
     directory: '/'
     schedule:
       interval: 'weekly'
+    # 複数に該当する更新は先に書いたグループに入る。メジャー更新は切り分けやすいよう個別PRのまま残す
+    groups:
+      # バージョンがずれると動かないため、メジャー更新も含めて常に一緒に上げる
+      react:
+        patterns:
+          - 'react'
+          - 'react-dom'
+          - '@types/react'
+          - '@types/react-dom'
+      npm-minor-patch:
+        update-types:
+          - 'minor'
+          - 'patch'
+      npm-security:
+        applies-to: security-updates
+        update-types:
+          - 'minor'
+          - 'patch'
 
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
       interval: 'weekly'
+    groups:
+      github-actions:
+        patterns:
+          - '*'

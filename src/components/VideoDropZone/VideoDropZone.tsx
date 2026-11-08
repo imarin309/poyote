@@ -4,9 +4,14 @@ import type { DragEvent, ChangeEvent } from 'react'
 interface VideoDropZoneProps {
   onFilesSelected: (files: File[]) => void
   error: string | null
+  multiple?: boolean
 }
 
-export function VideoDropZone({ onFilesSelected, error }: VideoDropZoneProps) {
+export function VideoDropZone({
+  onFilesSelected,
+  error,
+  multiple = true,
+}: VideoDropZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -51,7 +56,7 @@ export function VideoDropZone({ onFilesSelected, error }: VideoDropZoneProps) {
         }`}
       >
         <p className="text-neutral-300">
-          動画ファイルをここへドラッグ＆ドロップ（複数可）
+          動画ファイルをここへドラッグ＆ドロップ{multiple && '（複数可）'}
         </p>
         <p className="text-neutral-500">または</p>
         <button
@@ -66,7 +71,7 @@ export function VideoDropZone({ onFilesSelected, error }: VideoDropZoneProps) {
           data-testid="video-file-input"
           type="file"
           accept="video/*"
-          multiple
+          multiple={multiple}
           className="hidden"
           onChange={handleInputChange}
         />

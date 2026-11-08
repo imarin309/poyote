@@ -3,3 +3,4 @@
 # 「MIME type of "text/html"」の原因が追いにくくなるため対象を絞る
 /movie  /index.html  200
 /image  /index.html  200
+/compress  /index.html  200

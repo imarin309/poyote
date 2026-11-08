@@ -14,6 +14,10 @@ describe('routeFromPath', () => {
     expect(routeFromPath('/image')).toBe('image')
   })
 
+  it('/compress は圧縮ページ', () => {
+    expect(routeFromPath('/compress')).toBe('compress')
+  })
+
   it('末尾スラッシュがあっても同じページとして扱う', () => {
     expect(routeFromPath('/image/')).toBe('image')
   })
@@ -34,5 +38,9 @@ describe('pathForRoute', () => {
 
   it('画像ページのパスを返す', () => {
     expect(pathForRoute('image')).toBe('/image')
+  })
+
+  it('圧縮ページのパスを返す', () => {
+    expect(pathForRoute('compress')).toBe('/compress')
   })
 })

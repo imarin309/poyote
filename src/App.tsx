@@ -3,6 +3,7 @@ import { useRoute } from './hooks/useRoute'
 import { TopPage } from './pages/TopPage'
 import { VideoPage } from './pages/VideoPage'
 import { ImagePage } from './pages/ImagePage'
+import { CompressPage } from './pages/CompressPage'
 import { HelpTour } from './components/HelpTour/HelpTour'
 import { imageHelpSteps, videoHelpSteps } from './components/HelpTour/helpSteps'
 import type { HelpStep } from './components/HelpTour/helpSteps'
@@ -26,6 +27,9 @@ function App() {
     <>
       {route === 'video' && <VideoPage {...pageProps} helpOpen={helpOpen} />}
       {route === 'image' && <ImagePage {...pageProps} />}
+      {route === 'compress' && (
+        <CompressPage route={route} onNavigate={navigate} />
+      )}
       {route === 'top' && <TopPage route={route} onNavigate={navigate} />}
       {helpOpen && helpSteps && (
         <HelpTour steps={helpSteps} onClose={() => setHelpOpen(false)} />

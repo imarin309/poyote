@@ -30,10 +30,12 @@ export function useVideoCompression(file: File | null) {
   const [posterError, setPosterError] = useState<string | null>(null)
   const [syncedFile, setSyncedFile] = useState(file)
   const controllerRef = useRef<AbortController | null>(null)
+  const posterControllerRef = useRef<AbortController | null>(null)
 
   if (file !== syncedFile) {
     setSyncedFile(file)
     setStatus(IDLE)
+    setIsSavingPoster(false)
     setPosterError(null)
   }
 
@@ -46,9 +48,12 @@ export function useVideoCompression(file: File | null) {
     return () => URL.revokeObjectURL(resultUrl)
   }, [resultUrl])
 
-  // 動画を選び直したときとアンマウント時に、走っている変換を止める
+  // 動画を選び直したときとアンマウント時に、走っている変換とposter生成を止める
   useEffect(() => {
-    return () => controllerRef.current?.abort()
+    return () => {
+      controllerRef.current?.abort()
+      posterControllerRef.current?.abort()
+    }
   }, [file])
 
   const start = useCallback(
@@ -58,9 +63,11 @@ export function useVideoCompression(file: File | null) {
       }
 
       controllerRef.current?.abort()
+      posterControllerRef.current?.abort()
       const controller = new AbortController()
       controllerRef.current = controller
       setStatus({ phase: 'converting', progress: 0 })
+      setIsSavingPoster(false)
       setPosterError(null)
 
       try {
@@ -121,21 +128,36 @@ export function useVideoCompression(file: File | null) {
         return
       }
 
+      posterControllerRef.current?.abort()
+      const controller = new AbortController()
+      posterControllerRef.current = controller
       setIsSavingPoster(true)
       setPosterError(null)
+
       try {
         const poster = await extractPoster(
           status.result.blob,
           clampTime(timeSeconds, duration),
         )
+        if (controller.signal.aborted) {
+          return
+        }
+
         downloadBlob(
           poster,
           buildPosterFilename(stripExtension(file.name), poster.type),
         )
       } catch (error) {
+        if (controller.signal.aborted) {
+          return
+        }
+
         setPosterError(toMessage(error, 'posterの保存に失敗しました。'))
       } finally {
-        setIsSavingPoster(false)
+        if (posterControllerRef.current === controller) {
+          posterControllerRef.current = null
+          setIsSavingPoster(false)
+        }
       }
     },
     [status, file],
